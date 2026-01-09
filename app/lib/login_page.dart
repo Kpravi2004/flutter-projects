@@ -126,8 +126,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // ===================== LOGIC =====================
-
   Future<void> validateLogin() async {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
@@ -167,8 +165,8 @@ class _LoginPageState extends State<LoginPage> {
 
         if (!mounted) return;
 
-        // TODO: Navigate to Home/Dashboard page
-        // Navigator.pushReplacementNamed(context, '/home');
+        // 🆕 Go to Dashboard and remove Login page
+        Navigator.pushReplacementNamed(context, '/dashboard');
       } else {
         showSnackBar(data["message"], Colors.red);
       }

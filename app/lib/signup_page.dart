@@ -50,8 +50,6 @@ class _SignupPageState extends State<SignupPage> {
                 ),
 
                 const SizedBox(height: 25),
-
-                // Name
                 TextField(
                   controller: nameController,
                   decoration: _inputDecoration(
@@ -62,7 +60,6 @@ class _SignupPageState extends State<SignupPage> {
 
                 const SizedBox(height: 20),
 
-                // Email
                 TextField(
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -74,7 +71,6 @@ class _SignupPageState extends State<SignupPage> {
 
                 const SizedBox(height: 20),
 
-                // Password
                 TextField(
                   controller: passwordController,
                   obscureText: !isPasswordVisible,
@@ -98,7 +94,6 @@ class _SignupPageState extends State<SignupPage> {
 
                 const SizedBox(height: 20),
 
-                // Confirm Password
                 TextField(
                   controller: confirmPasswordController,
                   obscureText: !isConfirmPasswordVisible,
@@ -165,8 +160,6 @@ class _SignupPageState extends State<SignupPage> {
       ),
     );
   }
-
-  // ===================== LOGIC =====================
 
   Future<void> validateSignup() async {
     String name = nameController.text.trim();

@@ -4,23 +4,18 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const db = require("./db");
 
-// ================= APP INIT =================
 const app = express();
 
-// ================= MIDDLEWARE =================
 app.use(cors());
 app.use(bodyParser.json());
 
-// ================= TEST ROUTE =================
 app.get("/", (req, res) => {
   res.send("✅ Server is running");
 });
 
-// ================= SIGNUP API =================
 app.post("/signup", (req, res) => {
   const { name, email, password } = req.body;
 
-  // 1️⃣ Backend validation
   if (!name || !email || !password) {
     return res.status(400).json({
       success: false,
@@ -28,7 +23,6 @@ app.post("/signup", (req, res) => {
     });
   }
 
-  // 2️⃣ Check duplicate email
   const checkEmailSql = "SELECT id FROM users WHERE email = ?";
   db.query(checkEmailSql, [email], (err, result) => {
     if (err) {
@@ -46,7 +40,6 @@ app.post("/signup", (req, res) => {
       });
     }
 
-    // 3️⃣ Insert new user
     const insertSql =
       "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
 
@@ -67,17 +60,15 @@ app.post("/signup", (req, res) => {
   });
 });
 
-// ================= START SERVER =================
 const PORT = 3000;
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
-// ================= LOGIN API =================
+
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
 
-  // 1️⃣ Validation
   if (!email || !password) {
     return res.status(400).json({
       success: false,
@@ -85,7 +76,6 @@ app.post("/login", (req, res) => {
     });
   }
 
-  // 2️⃣ Check email exists
   const loginSql = "SELECT * FROM users WHERE email = ?";
   db.query(loginSql, [email], (err, result) => {
     if (err) {
@@ -96,7 +86,7 @@ app.post("/login", (req, res) => {
       });
     }
 
-    // Email not found
+
     if (result.length === 0) {
       return res.json({
         success: false,
@@ -106,7 +96,6 @@ app.post("/login", (req, res) => {
 
     const user = result[0];
 
-    // 3️⃣ Check password (PLAIN TEXT for now)
     if (user.password !== password) {
       return res.json({
         success: false,
@@ -114,7 +103,6 @@ app.post("/login", (req, res) => {
       });
     }
 
-    // 4️⃣ Success
     return res.json({
       success: true,
       message: "Login successful",

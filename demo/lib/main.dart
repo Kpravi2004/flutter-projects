@@ -3,6 +3,9 @@ import 'user_input_page.dart';
 import 'contact_app.dart';
 import 'user_directory.dart';
 import 'user_directory_pro.dart';
+import 'grid_basic.dart';
+import 'grid_view_builder.dart';
+import 'grid_tap_page.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -19,7 +22,7 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
 
       routes: {
-        '/': (context) => const UserDirectoryPro(),
+        '/': (context) => const GridTapPage(),
       },
     );
   }

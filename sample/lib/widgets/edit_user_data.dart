@@ -35,7 +35,7 @@ class _EditUserDialogState extends State<EditUserDialog> {
     return AlertDialog(
       title: const Text("Edit User"),
       content: SizedBox(
-        width: 400,
+        width: 500,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

@@ -21,7 +21,7 @@ class _AddUserDialogState extends State<AddUserDialog> {
     return AlertDialog(
       title: const Text("Add User"),
       content: SizedBox(
-        width: 400,
+        width: 500,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

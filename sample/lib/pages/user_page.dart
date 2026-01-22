@@ -16,7 +16,12 @@ class UsersPage extends StatefulWidget {
 
 class _UsersPageState extends State<UsersPage> {
   final List<User> users = [];
-
+  List<User> filteredUsers =[];
+  @override
+  void initState() {
+    super.initState();
+    filteredUsers = List.from(users);
+  }
   void openAddUserDialog() {
     showDialog(
       context: context,
@@ -24,6 +29,7 @@ class _UsersPageState extends State<UsersPage> {
         onAdd: (user) {
           setState(() {
             users.add(user);
+            filteredUsers =List.from(users);
           });
         },
       ),
@@ -38,6 +44,7 @@ class _UsersPageState extends State<UsersPage> {
         onSave: (updatedUser) {
           setState(() {
             users[index] = updatedUser;
+            filteredUsers =List.from(users);
           });
         },
       ),
@@ -47,6 +54,23 @@ class _UsersPageState extends State<UsersPage> {
   void deleteUser(int index) {
     setState(() {
       users.removeAt(index);
+      filteredUsers =List.from(users);
+    });
+  }
+  void onSearch(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        filteredUsers = List.from(users);
+      });
+      return;
+    }
+
+    setState(() {
+      filteredUsers = users.where((user) {
+        return user.name.toLowerCase().contains(query.toLowerCase()) ||
+            user.email.toLowerCase().contains(query.toLowerCase()) ||
+            user.phone.contains(query);
+      }).toList();
     });
   }
 
@@ -66,11 +90,13 @@ class _UsersPageState extends State<UsersPage> {
 
               const SizedBox(height: 20),
 
-              const SearchBox(),
+              SearchBox(
+                onChanged: onSearch,
+              ),
 
               const SizedBox(height: 20),
               UsersTable(
-                users: users,
+                users: filteredUsers,
                 onDelete: deleteUser,
                 onEdit: openEditUserDialog,
               ),

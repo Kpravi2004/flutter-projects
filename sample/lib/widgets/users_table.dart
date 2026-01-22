@@ -19,7 +19,7 @@ class UsersTable extends StatelessWidget {
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1100),
+        constraints: const BoxConstraints(maxWidth: 1200),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(

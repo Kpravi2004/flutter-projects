@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 
 class SearchBox extends StatelessWidget {
-  const SearchBox({super.key});
+  final Function(String) onChanged;
+  const SearchBox({super.key, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 350,
+      width: 450,
       child: TextField(
+        onChanged:onChanged,
         decoration: InputDecoration(
           hintText: "Search by name, email or phone...",
           prefixIcon: const Icon(Icons.search),

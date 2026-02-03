@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -7,10 +8,38 @@ import 'add_expense_page.dart';
 class ExpenseListPage extends StatelessWidget {
   const ExpenseListPage({super.key});
 
+  Future<void> _pickDate(BuildContext context, bool isFrom) async {
+    final state = context.read<ExpenseState>();
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isFrom
+          ? DateTime.now()
+          : (state.fromDate ?? DateTime.now()),
+      firstDate: isFrom
+          ? DateTime(2020)
+          : (state.fromDate ?? DateTime(2020)),
+      lastDate: DateTime(2035),
+    );
+
+    if (picked != null) {
+      if (isFrom) {
+        state.setFromDate(picked);
+
+        // 🔥 Reset TO date if invalid
+        if (state.toDate != null && state.toDate!.isBefore(picked)) {
+          state.setToDate(null);
+        }
+      } else {
+        state.setToDate(picked);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final state = Provider.of<ExpenseState>(context);
-    final expenses = state.filteredExpenses;
+    final state = context.watch<ExpenseState>();
+    final expenses = state.paginatedExpenses;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
@@ -22,11 +51,10 @@ class ExpenseListPage extends StatelessWidget {
             padding: const EdgeInsets.only(right: 16),
             child: ElevatedButton.icon(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AddExpensePage(),
-                  ),
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => const AddExpenseDialog(),
                 );
               },
               icon: const Icon(Icons.add),
@@ -40,24 +68,66 @@ class ExpenseListPage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            /// 🔹 FILTER BAR (WIDTH REDUCED ONLY)
+            /// 🔹 FILTER BAR
             Row(
               children: [
+                /// FROM DATE
                 SizedBox(
-                  width: 240, // 🔥 controlled width
+                  width: 250,
+                  child: TextField(
+                    readOnly: true,
+                    decoration: const InputDecoration(
+                      labelText: 'From Date',
+                      suffixIcon: Icon(Icons.date_range),
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    controller: TextEditingController(
+                      text: state.fromDate == null
+                          ? ''
+                          : _formatDate(state.fromDate!),
+                    ),
+                    onTap: () => _pickDate(context, true),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                /// TO DATE (AFTER FROM DATE)
+                SizedBox(
+                  width: 250,
+                  child: TextField(
+                    readOnly: true,
+                    decoration: const InputDecoration(
+                      labelText: 'To Date',
+                      suffixIcon: Icon(Icons.date_range),
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    controller: TextEditingController(
+                      text: state.toDate == null
+                          ? ''
+                          : _formatDate(state.toDate!),
+                    ),
+                    onTap: state.fromDate == null
+                        ? null
+                        : () => _pickDate(context, false),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                /// CATEGORY
+                SizedBox(
+                  width: 250,
                   child: DropdownButtonFormField<String>(
                     value: state.selectedCategory,
                     isDense: true,
                     decoration: const InputDecoration(
                       labelText: 'All Categories',
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
                       border: OutlineInputBorder(),
+                      isDense: true,
                     ),
-                    style: const TextStyle(fontSize: 14),
                     items: ['All', 'Food', 'Travel', 'Bills']
                         .map((e) => DropdownMenuItem(
                       value: e,
@@ -67,22 +137,20 @@ class ExpenseListPage extends StatelessWidget {
                     onChanged: (v) => state.changeCategory(v!),
                   ),
                 ),
+
                 const SizedBox(width: 12),
+
+                /// PAYMENT
                 SizedBox(
-                  width: 240, // 🔥 controlled width
+                  width: 250,
                   child: DropdownButtonFormField<String>(
                     value: state.selectedPayment,
                     isDense: true,
                     decoration: const InputDecoration(
                       labelText: 'All Payments',
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
                       border: OutlineInputBorder(),
+                      isDense: true,
                     ),
-                    style: const TextStyle(fontSize: 14),
                     items: ['All', 'Cash', 'GPay', 'Paytm']
                         .map((e) => DropdownMenuItem(
                       value: e,
@@ -110,9 +178,7 @@ class ExpenseListPage extends StatelessWidget {
                     const Divider(height: 1),
                     Expanded(
                       child: expenses.isEmpty
-                          ? const Center(
-                        child: Text('No expenses found'),
-                      )
+                          ? const Center(child: Text('No expenses found'))
                           : ListView.builder(
                         itemCount: expenses.length,
                         itemBuilder: (context, index) {
@@ -130,6 +196,61 @@ class ExpenseListPage extends StatelessWidget {
                 ),
               ),
             ),
+
+            const SizedBox(height: 12),
+
+            /// 🔹 ROWS PER PAGE + PAGINATION
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                /// ROW COUNT
+                Row(
+                  children: [
+                    const Text('Rows per page:'),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 80,
+                      child: DropdownButtonFormField<int>(
+                        value: state.pageSize,
+                        isDense: true,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                          contentPadding:
+                          EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 5, child: Text('5')),
+                          DropdownMenuItem(value: 10, child: Text('10')),
+                          DropdownMenuItem(value: 20, child: Text('20')),
+                        ],
+                        onChanged: (v) {
+                          if (v != null) state.setPageSize(v);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+
+                /// PAGINATION
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: state.prevPage,
+                      icon: const Icon(Icons.chevron_left),
+                    ),
+                    Text(
+                      'Page ${state.currentPage}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    IconButton(
+                      onPressed: state.nextPage,
+                      icon: const Icon(Icons.chevron_right),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -139,44 +260,16 @@ class ExpenseListPage extends StatelessWidget {
   /// 🔹 TABLE HEADER
   Widget _tableHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: 12,
-        horizontal: 16,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       color: const Color(0xFFF0F0F0),
       child: const Row(
         children: [
-          Expanded(
-            child: Text(
-              'Category',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              'Expense Name',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              'Amount',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              'Payment',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          SizedBox(
-            width: 90,
-            child: Text(
-              'Actions',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
+          Expanded(child: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
+          Expanded(child: Text('Category', style: TextStyle(fontWeight: FontWeight.bold))),
+          Expanded(child: Text('Expense Name', style: TextStyle(fontWeight: FontWeight.bold))),
+          Expanded(child: Text('Amount', style: TextStyle(fontWeight: FontWeight.bold))),
+          Expanded(child: Text('Payment', style: TextStyle(fontWeight: FontWeight.bold))),
+          SizedBox(width: 90, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
         ],
       ),
     );
@@ -190,46 +283,38 @@ class ExpenseListPage extends StatelessWidget {
       int index,
       ) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: 10,
-        horizontal: 16,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
       decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: Colors.grey),
-        ),
+        border: Border(bottom: BorderSide(color: Colors.grey)),
       ),
       child: Row(
         children: [
+          Expanded(child: Text(e.date)),
           Expanded(child: Text(e.category)),
           Expanded(child: Text(e.expenseName)),
           Expanded(child: Text('₹ ${e.amount}')),
           Expanded(child: Text(e.paymentMethod)),
           SizedBox(
-            width: 90,
+            width: 110,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.edit, size: 18),
+                  icon: const Icon(Icons.edit_outlined, size: 20),
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => AddExpensePage(
-                          expense: e,
-                          index: index,
-                        ),
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) => AddExpenseDialog(
+                        expense: e,
+                        index: index,
                       ),
                     );
                   },
                 ),
                 IconButton(
-                  icon: const Icon(
-                    Icons.delete,
-                    size: 18,
-                    color: Colors.red,
-                  ),
+                  icon: const Icon(CupertinoIcons.delete,
+                      size: 25, color: Colors.red),
                   onPressed: () => state.deleteExpense(index),
                 ),
               ],
@@ -238,5 +323,11 @@ class ExpenseListPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatDate(DateTime d) {
+    return "${d.day.toString().padLeft(2, '0')}-"
+        "${d.month.toString().padLeft(2, '0')}-"
+        "${d.year}";
   }
 }

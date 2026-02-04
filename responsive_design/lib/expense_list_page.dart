@@ -26,7 +26,6 @@ class ExpenseListPage extends StatelessWidget {
       if (isFrom) {
         state.setFromDate(picked);
 
-        // 🔥 Reset TO date if invalid
         if (state.toDate != null && state.toDate!.isBefore(picked)) {
           state.setToDate(null);
         }
@@ -50,6 +49,8 @@ class ExpenseListPage extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: ElevatedButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Add Expense'),
               onPressed: () {
                 showDialog(
                   context: context,
@@ -57,8 +58,6 @@ class ExpenseListPage extends StatelessWidget {
                   builder: (_) => const AddExpenseDialog(),
                 );
               },
-              icon: const Icon(Icons.add),
-              label: const Text('Add Expense'),
             ),
           ),
         ],
@@ -71,7 +70,6 @@ class ExpenseListPage extends StatelessWidget {
             /// 🔹 FILTER BAR
             Row(
               children: [
-                /// FROM DATE
                 SizedBox(
                   width: 250,
                   child: TextField(
@@ -90,10 +88,7 @@ class ExpenseListPage extends StatelessWidget {
                     onTap: () => _pickDate(context, true),
                   ),
                 ),
-
                 const SizedBox(width: 12),
-
-                /// TO DATE (AFTER FROM DATE)
                 SizedBox(
                   width: 250,
                   child: TextField(
@@ -114,10 +109,7 @@ class ExpenseListPage extends StatelessWidget {
                         : () => _pickDate(context, false),
                   ),
                 ),
-
                 const SizedBox(width: 12),
-
-                /// CATEGORY
                 SizedBox(
                   width: 250,
                   child: DropdownButtonFormField<String>(
@@ -137,10 +129,7 @@ class ExpenseListPage extends StatelessWidget {
                     onChanged: (v) => state.changeCategory(v!),
                   ),
                 ),
-
                 const SizedBox(width: 12),
-
-                /// PAYMENT
                 SizedBox(
                   width: 250,
                   child: DropdownButtonFormField<String>(
@@ -165,45 +154,69 @@ class ExpenseListPage extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            /// 🔹 TABLE
+            /// 🔹 TABLE / MOBILE VIEW
             Expanded(
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  children: [
-                    _tableHeader(),
-                    const Divider(height: 1),
-                    Expanded(
-                      child: expenses.isEmpty
-                          ? const Center(child: Text('No expenses found'))
-                          : ListView.builder(
-                        itemCount: expenses.length,
-                        itemBuilder: (context, index) {
-                          final e = expenses[index];
-                          return _tableRow(
-                            context,
-                            state,
-                            e,
-                            index,
-                          );
-                        },
-                      ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  /// 📱 SMALL SCREEN (<300px)
+                  if (constraints.maxWidth < 300) {
+                    return expenses.isEmpty
+                        ? const Center(child: Text('No expenses found'))
+                        : ListView.builder(
+                      itemCount: expenses.length,
+                      itemBuilder: (context, index) {
+                        final e = expenses[index];
+                        return _mobileExpenseCard(
+                          context,
+                          state,
+                          e,
+                          index,
+                        );
+                      },
+                    );
+                  }
+
+                  /// 🖥️ WEB / DESKTOP VIEW (UNCHANGED)
+                  return Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  ],
-                ),
+                    child: Column(
+                      children: [
+                        _tableHeader(),
+                        const Divider(height: 1),
+                        Expanded(
+                          child: expenses.isEmpty
+                              ? const Center(
+                            child: Text('No expenses found'),
+                          )
+                              : ListView.builder(
+                            itemCount: expenses.length,
+                            itemBuilder: (context, index) {
+                              final e = expenses[index];
+                              return _tableRow(
+                                context,
+                                state,
+                                e,
+                                index,
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
 
             const SizedBox(height: 12),
 
-            /// 🔹 ROWS PER PAGE + PAGINATION
+            /// 🔹 ROWS + PAGINATION
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                /// ROW COUNT
                 Row(
                   children: [
                     const Text('Rows per page:'),
@@ -231,8 +244,6 @@ class ExpenseListPage extends StatelessWidget {
                     ),
                   ],
                 ),
-
-                /// PAGINATION
                 Row(
                   children: [
                     IconButton(
@@ -297,10 +308,9 @@ class ExpenseListPage extends StatelessWidget {
           SizedBox(
             width: 110,
             child: Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 20),
+                  icon: const Icon(Icons.edit_outlined),
                   onPressed: () {
                     showDialog(
                       context: context,
@@ -313,14 +323,65 @@ class ExpenseListPage extends StatelessWidget {
                   },
                 ),
                 IconButton(
-                  icon: const Icon(CupertinoIcons.delete,
-                      size: 25, color: Colors.red),
+                  icon: const Icon(CupertinoIcons.delete, color: Colors.red),
                   onPressed: () => state.deleteExpense(index),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// 🔹 MOBILE CARD VIEW
+  Widget _mobileExpenseCard(
+      BuildContext context,
+      ExpenseState state,
+      dynamic e,
+      int index,
+      ) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(e.expenseName,
+                style:
+                const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Text("Date: ${e.date}"),
+            Text("Category: ${e.category}"),
+            Text("Payment: ${e.paymentMethod}"),
+            Text("Amount: ₹ ${e.amount}",
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            const Divider(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) => AddExpenseDialog(
+                        expense: e,
+                        index: index,
+                      ),
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(CupertinoIcons.delete, color: Colors.red),
+                  onPressed: () => state.deleteExpense(index),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

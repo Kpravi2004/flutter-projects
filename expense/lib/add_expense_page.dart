@@ -70,6 +70,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
   Widget build(BuildContext context) {
     final state = context.read<ExpenseState>();
 
+    /// 🔥 FIXED ENTRY ANIMATION
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.85, end: 1),
       duration: const Duration(milliseconds: 300),
@@ -78,7 +79,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
         return Transform.scale(
           scale: value, // can overshoot → OK
           child: Opacity(
-            opacity: value.clamp(0.0, 1.0),
+            opacity: value.clamp(0.0, 1.0), // ✅ FIX HERE
             child: child,
           ),
         );
@@ -103,6 +104,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                     ),
                     const SizedBox(height: 16),
 
+                    /// DATE
                     TextFormField(
                       controller: dateController,
                       readOnly: true,
@@ -117,6 +119,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                     ),
                     const SizedBox(height: 16),
 
+                    /// CATEGORY
                     DropdownButtonFormField<String>(
                       value: category,
                       decoration: const InputDecoration(
@@ -156,6 +159,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                     ),
                     const SizedBox(height: 16),
 
+                    /// AMOUNT
                     TextFormField(
                       controller: amountController,
                       keyboardType: TextInputType.number,
@@ -179,6 +183,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                     ),
                     const SizedBox(height: 16),
 
+                    /// PAYMENT METHOD
                     DropdownButtonFormField<String>(
                       value: paymentMethod,
                       decoration: const InputDecoration(
@@ -199,6 +204,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                       v == null || v.isEmpty ? 'Payment required' : null,
                     ),
 
+                    /// ACTIVE
                     Row(
                       children: [
                         Checkbox(
@@ -212,6 +218,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
 
                     const SizedBox(height: 12),
 
+                    /// ACTION BUTTONS
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [

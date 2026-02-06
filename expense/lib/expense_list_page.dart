@@ -49,6 +49,7 @@ class ExpenseListPage extends StatelessWidget {
         ],
       ),
 
+      /// PAGE LOAD ANIMATION
       body: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0, end: 1),
         duration: const Duration(milliseconds: 600),
@@ -82,6 +83,7 @@ class ExpenseListPage extends StatelessWidget {
     );
   }
 
+  // ================= FILTERS =================
 
   Widget _filters(BuildContext context, ExpenseState state, bool isMobile) {
     if (isMobile) {
@@ -170,6 +172,7 @@ class ExpenseListPage extends StatelessWidget {
     );
   }
 
+  // ================= DATA VIEW =================
 
   Widget _desktopTable(
       BuildContext context, ExpenseState state, List expenses) {
@@ -203,6 +206,7 @@ class ExpenseListPage extends StatelessWidget {
     );
   }
 
+  // ================= ANIMATIONS =================
 
   Widget _animatedTableRow(
       BuildContext context, ExpenseState state, e, int i) {
@@ -301,6 +305,7 @@ class ExpenseListPage extends StatelessWidget {
       ),
     );
   }
+
   Widget _mobileCard(
       BuildContext context,
       ExpenseState state,
@@ -312,93 +317,96 @@ class ExpenseListPage extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
           children: [
-            /// LEFT COLUMN
-            Expanded(child: _leftColumn(e)),
+            /// ROW 1 — LABELS
+            Row(
+              children: [
+                Expanded(child: _label('Expense name')),
+                _rightLabel('Date'),
+              ],
+            ),
+            const SizedBox(height: 4),
 
-            const SizedBox(width: 20),
+            /// ROW 2 — VALUES
+            Row(
+              children: [
+                Expanded(child: _value(e.expenseName)),
+                _rightValue(e.date),
+              ],
+            ),
 
-            /// RIGHT COLUMN
-            _rightColumn(context, state, e, i),
+            const SizedBox(height: 10),
+
+            /// ROW 3 — LABELS
+            Row(
+              children: [
+                Expanded(child: _label('Category')),
+                _rightLabel('Payment'),
+              ],
+            ),
+            const SizedBox(height: 4),
+
+            /// ROW 4 — VALUES
+            Row(
+              children: [
+                Expanded(child: _value(e.category)),
+                _rightValue(e.paymentMethod),
+              ],
+            ),
+
+            const SizedBox(height: 10),
+
+            /// ROW 5 — AMOUNT + ACTIONS
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _label('Amount'),
+                      const SizedBox(height: 4),
+                      _value('₹ ${e.amount}', bold: true),
+                    ],
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (_) =>
+                              AddExpenseDialog(expense: e, index: i),
+                        );
+                      },
+                    ),
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: Colors.red,
+                      ),
+                      onPressed: () => state.deleteExpense(i),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
-  Widget _leftColumn(dynamic e) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _label('Expense name'),
-        _value(e.expenseName),
 
-        const SizedBox(height: 10),
-
-        _label('Category'),
-        _value(e.category),
-
-        const SizedBox(height: 10),
-
-        _label('Amount'),
-        _value('₹ ${e.amount}', bold: true),
-      ],
-    );
-  }
-  Widget _rightColumn(
-      BuildContext context,
-      ExpenseState state,
-      dynamic e,
-      int i,
-      ) {
-    return SizedBox(
-      width: 120,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _label('Date'),
-          _value(e.date, alignRight: true),
-
-          const SizedBox(height: 10),
-
-          _label('Payment'),
-          _value(e.paymentMethod, alignRight: true),
-
-          const SizedBox(height: 14),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: const Icon(Icons.edit_outlined, size: 18),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (_) =>
-                        AddExpenseDialog(expense: e, index: i),
-                  );
-                },
-              ),
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: const Icon(
-                  Icons.delete_outline,
-                  size: 18,
-                  color: Colors.red,
-                ),
-                onPressed: () => state.deleteExpense(i),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
   Widget _label(String text) {
     return Text(
       text,
@@ -409,20 +417,83 @@ class ExpenseListPage extends StatelessWidget {
     );
   }
 
-  Widget _value(
-      String text, {
-        bool bold = false,
-        bool alignRight = false,
-      }) {
+  Widget _value(String text, {bool bold = false}) {
     return Text(
       text,
-      textAlign: alignRight ? TextAlign.right : TextAlign.left,
       style: TextStyle(
         fontSize: 14,
         fontWeight: bold ? FontWeight.bold : FontWeight.w600,
       ),
     );
   }
+
+  /// Right column label with fixed width
+  Widget _rightLabel(String text) {
+    return SizedBox(
+      width: 90,
+      child: Text(
+        text,
+        textAlign: TextAlign.right,
+        style: TextStyle(
+          fontSize: 11,
+          color: Colors.grey.shade600,
+        ),
+      ),
+    );
+  }
+
+  /// Right column value with fixed width
+  Widget _rightValue(String text) {
+    return SizedBox(
+      width: 90,
+      child: Text(
+        text,
+        textAlign: TextAlign.right,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+
+
+
+
+  Widget _mobileField({
+    required String label,
+    required String value,
+    bool alignRight = false,
+    bool bold = false,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment:
+      alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.grey.shade600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          softWrap: true,
+          textAlign: alignRight ? TextAlign.right : TextAlign.left,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: bold ? FontWeight.bold : FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+
 
 
 
@@ -462,6 +533,7 @@ class ExpenseListPage extends StatelessWidget {
   Widget _pagination(ExpenseState state) {
     return Column(
       children: [
+        /// ROWS PER PAGE
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -488,6 +560,7 @@ class ExpenseListPage extends StatelessWidget {
 
         const SizedBox(height: 8),
 
+        /// PAGINATION
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -510,6 +583,7 @@ class ExpenseListPage extends StatelessWidget {
   }
 
 
+  // ================= HELPERS =================
 
   Future<void> _pickDate(
       BuildContext context,
@@ -523,13 +597,15 @@ class ExpenseListPage extends StatelessWidget {
           : (state.fromDate ?? DateTime.now()),
       firstDate: isFrom
           ? DateTime(2020)
-          : (state.fromDate ?? DateTime(2020)),
+          : (state.fromDate ?? DateTime(2020)), // 🔥 constraint
       lastDate: DateTime(2035),
     );
 
     if (picked != null) {
       if (isFrom) {
         state.setFromDate(picked);
+
+        // 🔥 Reset TO date if invalid
         if (state.toDate != null && state.toDate!.isBefore(picked)) {
           state.setToDate(null);
         }

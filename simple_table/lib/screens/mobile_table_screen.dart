@@ -912,12 +912,14 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
   }
 
   void _showEditTableDialog(TableModel table) {
+    // Make local copies of the data we'll edit
     String tempNumber = table.number;
     String tempName = table.name;
     int tempMaxGuests = table.maxGuests;
     String tempFloor = table.floor;
     String tempStatus = table.status == TableStatus.free ? 'Active' : 'Inactive';
 
+    // Mutable copy of seats (we'll add/remove as capacity changes)
     List<SeatModel> tempSeats = table.seats.map((s) => SeatModel(
       id: s.id,
       seatNo: s.seatNo,
@@ -941,6 +943,8 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                 children: [
                   Text('Edit Table', style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeXl, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
+
+                  // Table Number
                   TextField(
                     controller: TextEditingController(text: tempNumber),
                     onChanged: (v) => tempNumber = v,
@@ -948,12 +952,20 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                       labelText: 'Table Number',
                       labelStyle: TextStyle(color: AppConstants.tealPrimary),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: AppConstants.tealPrimary.withOpacity(0.3), width: AppConstants.borderThin)),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: AppConstants.tealPrimary, width: AppConstants.borderNormal)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: AppConstants.tealPrimary.withOpacity(0.3), width: AppConstants.borderThin),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: AppConstants.tealPrimary, width: AppConstants.borderNormal),
+                      ),
                     ),
                     style: TextStyle(color: AppConstants.textPrimary),
                   ),
                   const SizedBox(height: 12),
+
+                  // Table Name
                   TextField(
                     controller: TextEditingController(text: tempName),
                     onChanged: (v) => tempName = v,
@@ -961,14 +973,23 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                       labelText: 'Table Name',
                       labelStyle: TextStyle(color: AppConstants.tealPrimary),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: AppConstants.tealPrimary.withOpacity(0.3), width: AppConstants.borderThin)),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: AppConstants.tealPrimary, width: AppConstants.borderNormal)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: AppConstants.tealPrimary.withOpacity(0.3), width: AppConstants.borderThin),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: AppConstants.tealPrimary, width: AppConstants.borderNormal),
+                      ),
                     ),
                     style: TextStyle(color: AppConstants.textPrimary),
                   ),
                   const SizedBox(height: 16),
+
+                  // Capacity and Status in one row
                   Row(
                     children: [
+                      // Capacity
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -985,18 +1006,25 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                 children: [
                                   IconButton(
-                                    icon: Icon(Icons.remove_circle_outline, color: tempMaxGuests > 1 ? AppConstants.errorRed : Colors.grey),
+                                    icon: Icon(Icons.remove_circle_outline,
+                                        color: tempMaxGuests > 1 ? AppConstants.errorRed : Colors.grey),
                                     onPressed: tempMaxGuests > 1 ? () => setState(() {
                                       tempMaxGuests--;
-                                      if (tempSeats.length > tempMaxGuests) tempSeats.removeLast();
-                                      if (table.guests > tempMaxGuests) table.guests = tempMaxGuests;
+                                      if (tempSeats.length > tempMaxGuests) {
+                                        tempSeats.removeLast();
+                                      }
+                                      if (table.guests > tempMaxGuests) {
+                                        table.guests = tempMaxGuests;
+                                      }
                                     }) : null,
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
                                   ),
-                                  Text('$tempMaxGuests', style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeMd, fontWeight: FontWeight.bold)),
+                                  Text('$tempMaxGuests',
+                                      style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeMd, fontWeight: FontWeight.bold)),
                                   IconButton(
-                                    icon: Icon(Icons.add_circle_outline, color: tempMaxGuests < 20 ? AppConstants.successGreen : Colors.grey),
+                                    icon: Icon(Icons.add_circle_outline,
+                                        color: tempMaxGuests < 20 ? AppConstants.successGreen : Colors.grey),
                                     onPressed: tempMaxGuests < 20 ? () => setState(() {
                                       tempMaxGuests++;
                                       tempSeats.add(SeatModel(
@@ -1017,6 +1045,8 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
+
+                      // Status
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1051,6 +1081,8 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
+
+                  // Floor
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1078,47 +1110,82 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
+
+                  // Buttons
                   Row(
                     children: [
-                      Expanded(child: TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeMd)))),
+                      Expanded(child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Cancel', style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeMd)),
+                      )),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: AppConstants.tealPrimary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                          onPressed: () async {
-                            table.number = tempNumber;
-                            table.name = tempName;
-                            table.maxGuests = tempMaxGuests;
-                            table.floor = tempFloor;
-                            table.status = tempStatus == 'Active' ? TableStatus.free : TableStatus.cleaning;
-                            if (table.guests > table.maxGuests) table.guests = table.maxGuests;
-
-                            Navigator.pop(context);
-
-                            try {
-                              await ApiService.updateTable(table);
-
-                              Set<int> origIds = table.seats.map((s) => s.id).where((id) => id > 0).toSet();
-                              Set<int> newIds = tempSeats.map((s) => s.id).where((id) => id > 0).toSet();
-
-                              for (int sid in origIds.difference(newIds)) await ApiService.deleteSeat(sid);
-                              for (var seat in tempSeats.where((s) => s.id == 0)) {
-                                await ApiService.createSeat(tableId: table.id, seatNo: seat.seatNo, status: seat.status, colorCode: seat.colorCode);
-                              }
-                              for (var seat in tempSeats.where((s) => s.id > 0)) {
-                                await ApiService.updateSeatStatus(seatId: seat.id, status: seat.status);
-                              }
-
-                              await _fetchTables();
-                              _showSuccess('Table updated');
-                            } catch (e) {
-                              _showError('Failed to update table');
-                              await _fetchTables();
-                            }
-                          },
-                          child: const Text('Save'),
+                      Expanded(child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppConstants.tealPrimary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
-                      ),
+                        onPressed: () async {
+                          // Apply changes to the original table
+                          table.number = tempNumber;
+                          table.name = tempName;
+                          table.maxGuests = tempMaxGuests;
+                          table.floor = tempFloor;
+                          table.status = tempStatus == 'Active' ? TableStatus.free : TableStatus.cleaning;
+                          if (table.guests > table.maxGuests) {
+                            table.guests = table.maxGuests;
+                          }
+
+                          Navigator.pop(context); // close edit dialog
+
+                          try {
+                            // 1. Update table basic fields
+                            await ApiService.updateTable(table);
+                            print('Table basic info updated');
+
+                            // 2. Handle seats: determine which to delete, create, update
+                            Set<int> originalSeatIds = table.seats.map((s) => s.id).where((id) => id > 0).toSet();
+                            Set<int> newSeatIds = tempSeats.map((s) => s.id).where((id) => id > 0).toSet();
+
+                            // Delete seats no longer present
+                            for (int sid in originalSeatIds.difference(newSeatIds)) {
+                              await ApiService.deleteSeat(sid);
+                              print('Deleted seat $sid');
+                            }
+
+                            // Create new seats (id == 0)
+                            for (var seat in tempSeats.where((s) => s.id == 0)) {
+                              await ApiService.createSeat(
+                                tableId: table.id,
+                                seatNo: seat.seatNo,
+                                status: seat.status,
+                                colorCode: seat.colorCode,
+                              );
+                              print('Created seat ${seat.seatNo}');
+                            }
+
+                            // Update existing seats (id > 0)
+                            for (var seat in tempSeats.where((s) => s.id > 0)) {
+                              await ApiService.updateSeat(
+                                seatId: seat.id,
+                                seatNo: seat.seatNo,
+                                status: seat.status,
+                                colorCode: seat.colorCode,
+                              );
+                            }
+
+                            // Refresh table list
+                            await _fetchTables();
+                            _showSuccess('Table updated');
+                          } catch (e) {
+                            print('Error updating table: $e');
+                            _showError('Failed to update table');
+                            await _fetchTables();
+                          }
+                        },
+                        child: const Text('Save'),
+                      )),
                     ],
                   ),
                 ],
@@ -1145,7 +1212,13 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
     }
 
     List<SeatModel> tempSeats = fetchedSeats
-        .map((s) => SeatModel(id: s.id, seatNo: s.seatNo, status: s.status, colorCode: s.colorCode, tableId: s.tableId))
+        .map((s) => SeatModel(
+      id: s.id,
+      seatNo: s.seatNo,
+      status: s.status,
+      colorCode: s.colorCode,
+      tableId: s.tableId,
+    ))
         .toList()
       ..sort((a, b) => a.seatNo.compareTo(b.seatNo));
 
@@ -1226,34 +1299,47 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                   const SizedBox(height: 20),
                   Row(
                     children: [
-                      Expanded(child: TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeMd)))),
+                      Expanded(child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Cancel', style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeMd)),
+                      )),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: AppConstants.tealPrimary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                          onPressed: () async {
-                            Navigator.pop(context);
-                            try {
-                              for (var seat in tempSeats) {
-                                if (seat.id == 0) {
-                                  await ApiService.createSeat(tableId: table.id, seatNo: seat.seatNo, status: seat.status, colorCode: seat.colorCode);
-                                } else {
-                                  await ApiService.updateSeatStatus(seatId: seat.id, status: seat.status);
-                                }
-                              }
-                              int occCount = tempSeats.where((s) => s.status == 'Occupied').length;
-                              table.guests = occCount;
-                              table.status = occCount > 0 ? TableStatus.occupied : TableStatus.free;
-                              await _fetchTables();
-                              _showSuccess('Seats updated');
-                            } catch (e) {
-                              _showError('Failed to update seats');
-                              await _fetchTables();
-                            }
-                          },
-                          child: const Text('Save Seats'),
+                      Expanded(child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppConstants.tealPrimary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
-                      ),
+                        onPressed: () async {
+                          Navigator.pop(context); // close dialog
+                          try {
+                            // Use full seat update for each seat
+                            for (var seat in tempSeats) {
+                              await ApiService.updateSeat(
+                                seatId: seat.id,
+                                seatNo: seat.seatNo,
+                                status: seat.status,
+                                colorCode: seat.colorCode,
+                              );
+                            }
+
+                            // Recalculate table status based on occupied seats
+                            int occCount = tempSeats.where((s) => s.status == 'Occupied').length;
+                            table.guests = occCount;
+                            table.status = occCount > 0 ? TableStatus.occupied : TableStatus.free;
+
+                            // Refresh table list
+                            await _fetchTables();
+                            _showSuccess('Seats updated');
+                          } catch (e) {
+                            print('Error updating seats: $e');
+                            _showError('Failed to update seats: $e');
+                            await _fetchTables();
+                          }
+                        },
+                        child: const Text('Save Seats'),
+                      )),
                     ],
                   ),
                 ],

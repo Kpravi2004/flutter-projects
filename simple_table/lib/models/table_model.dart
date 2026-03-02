@@ -21,8 +21,8 @@ class TableModel {
   int guests;              // derived from seats
   int maxGuests;           // total_seats
   double amount;
-  int? waiterId;           // integer ID from waiter
-  String? waiterName;
+  int? waiterId;           // integer ID from waiter (now stored in DB)
+  String? waiterName;      // transient, for display only
   String? cleaningTime;
   String? reservedTime;
   TableShape shape;
@@ -74,6 +74,10 @@ class TableModel {
     }
     int guests = seats.where((s) => s.status == 'Occupied').length;
 
+    // Parse waiter fields (now provided by backend)
+    int? waiterId = json['waiterId'] as int?;
+    String? waiterName = json['waiterName'] as String?;
+
     return TableModel(
       id: id,
       number: number,
@@ -84,8 +88,8 @@ class TableModel {
       amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
       floor: floor,
       seats: seats,
-      waiterId: json['waiterId'] as int?,
-      waiterName: json['waiterName'] as String?,
+      waiterId: waiterId,
+      waiterName: waiterName,
     );
   }
 
@@ -134,8 +138,8 @@ class TableModel {
       'total_seats': maxGuests,
       'status': backendStatus,
       'floor_name': floor,
-      'waiterId': waiterId,
-      'waiterName': waiterName,
+      'waiterId': waiterId,    // send only the ID; backend will set relationship
+      'waiterName': waiterName, // optional, backend will ignore on update
       'seats': seats.map((s) => s.toJson()).toList(),
     };
   }

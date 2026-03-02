@@ -10,6 +10,7 @@ import '../widgets/waiter_selection_dialog.dart';
 import '../widgets/bill_split_dialog.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
+import '../widgets/seat_selection_dialog.dart';
 import '../services/api_service.dart';
 import '../models/seat_model.dart';
 
@@ -641,40 +642,66 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
           if (!mounted) return;
           setState(() => isLoading = true);
           try {
-            print('📝 Creating table: ${newTable.toJson()}');
             TableModel created = await ApiService.createTable(newTable.toJson());
             if (!mounted) return;
-            print('✅ Table created with ID: ${created.id}');
             _showSuccess('Table created with ID ${created.id}');
 
-            bool? configured = await showDialog(
-              context: context,
-              builder: (ctx) => SeatConfigDialog(
-                table: created,
-                totalSeats: created.maxGuests,
+            // Generate default seats for the new table
+            List<SeatModel> defaultSeats = List.generate(
+              created.maxGuests,
+                  (index) => SeatModel(
+                id: 0,
+                seatNo: index + 1,
+                status: 'Free',
+                colorCode: 'White',
+                tableId: created.id,
               ),
             );
-            print('🔧 Seat configuration result: $configured');
+
+            // Use SeatSelectionDialog for initial seat configuration
+            bool? configured = await showDialog(
+              context: context,
+              builder: (ctx) => SeatSelectionDialog(
+                seats: defaultSeats,
+                maxGuests: created.maxGuests,
+                tableNumber: int.parse(created.number),
+                onSeatsSelected: (selectedSeats) async {
+                  // Save the selected seats via API
+                  for (var seat in selectedSeats) {
+                    if (seat.id == 0) {
+                      await ApiService.createSeat(
+                        tableId: created.id,
+                        seatNo: seat.seatNo,
+                        status: seat.status,
+                        colorCode: seat.colorCode,
+                      );
+                    } else {
+                      await ApiService.updateSeatStatus(
+                        seatId: seat.id,
+                        status: seat.status,
+                      );
+                    }
+                  }
+                },
+              ),
+            );
 
             if (!mounted) return;
 
-            // Wait a moment for backend to settle
+            // Wait a moment for backend to settle, then refresh
             await Future.delayed(const Duration(milliseconds: 500));
-            print('🔄 Refreshing tables after seat config...');
             await _fetchTables(showLoading: false);
 
             if (configured == true) {
               _showSuccess('Seats configured');
             }
-          } catch (e, stack) {
-            print('❌ Error in table creation: $e\n$stack');
+          } catch (e) {
             if (!mounted) return;
             _showError('Failed to create table: $e');
             await _fetchTables(showLoading: false);
           } finally {
             if (mounted) {
               setState(() => isLoading = false);
-              print('🏁 Finished table creation, isLoading = false');
             }
           }
         },
@@ -723,47 +750,41 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
     );
   }
 
-  void _showGuestSelectionDialog(TableModel table) {
-    showDialog(
+  void _showGuestSelectionDialog(TableModel table) async {
+    List<SeatModel>? seats;
+    try {
+      seats = await ApiService.getSeatsByTable(table.id);
+    } catch (e) {
+      _showError('Failed to fetch seats');
+      return;
+    }
+
+    if (seats == null || seats.isEmpty) {
+      _showError('No seats found for this table');
+      return;
+    }
+
+    bool? confirmed = await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppConstants.lightSurface,
-        title: Text('Select Guests', style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeLg)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Max: ${table.maxGuests}', style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeSm)),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              children: List.generate(table.maxGuests, (index) {
-                int count = index + 1;
-                return ChoiceChip(
-                  label: Text('$count', style: const TextStyle(fontSize: AppConstants.fontSizeSm)),
-                  selected: table.guests == count,
-                  onSelected: (selected) async {
-                    setState(() {
-                      table.guests = count;
-                      table.status = TableStatus.occupied;
-                      table.updateSeatsFromGuestCount();
-                    });
-                    Navigator.pop(context);
-                    try {
-                      await ApiService.updateTable(table);
-                      if (table.maxGuests >= 6 && count >= 4) _showBillSplitOption(table);
-                    } catch (e) {
-                      _showError('Failed to update');
-                      _fetchTables();
-                    }
-                  },
-                  selectedColor: AppConstants.successGreen,
-                  backgroundColor: AppConstants.lightSurface,
-                  labelStyle: TextStyle(color: AppConstants.textPrimary),
-                );
-              }),
-            ),
-          ],
-        ),
+      builder: (context) => SeatSelectionDialog(
+        seats: seats!, // now non-nullable
+        maxGuests: table.maxGuests,
+        tableNumber: int.parse(table.number),
+        onSeatsSelected: (selectedSeats) async {
+          int occupiedCount = selectedSeats.where((s) => s.status == 'Occupied').length;
+          setState(() {
+            table.seats = selectedSeats;
+            table.guests = occupiedCount;
+            table.status = occupiedCount > 0 ? TableStatus.occupied : TableStatus.free;
+          });
+
+          try {
+            await ApiService.updateTable(table);
+            _showSuccess('Table updated');
+          } catch (e) {
+            _showError('Failed to update table');
+          }
+        },
       ),
     );
   }

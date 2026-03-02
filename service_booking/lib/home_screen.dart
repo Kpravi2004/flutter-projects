@@ -9,10 +9,8 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
 
-    if (width >= 1000) {
-      return const HomeDesktop();
-    } else {
-      return const HomeMobile();
-    }
+    return width > 650
+        ? const HomeDesktop()
+        : const HomeMobile();
   }
 }

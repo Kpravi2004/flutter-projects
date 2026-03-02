@@ -41,100 +41,58 @@ class _AddTableDialogState extends State<AddTableDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Add New Table',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            const Text('Add New Table', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
 
             TextField(
               controller: tableNumberController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Table Number',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'Table Number', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
 
             TextField(
               controller: tableNameController,
-              decoration: const InputDecoration(
-                labelText: 'Table Name (optional)',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'Table Name (optional)', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
 
             DropdownButtonFormField<String>(
               value: selectedFloor,
-              decoration: const InputDecoration(
-                labelText: 'Floor',
-                border: OutlineInputBorder(),
-              ),
-              items: widget.floors.map((floor) {
-                return DropdownMenuItem(
-                  value: floor,
-                  child: Text(floor),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedFloor = value!;
-                });
-              },
+              decoration: const InputDecoration(labelText: 'Floor', border: OutlineInputBorder()),
+              items: widget.floors.map((floor) => DropdownMenuItem(value: floor, child: Text(floor))).toList(),
+              onChanged: (value) => setState(() => selectedFloor = value!),
             ),
             const SizedBox(height: 16),
 
             DropdownButtonFormField<String>(
               value: selectedStatus,
-              decoration: const InputDecoration(
-                labelText: 'Status',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
               items: const [
                 DropdownMenuItem(value: 'Active', child: Text('Active')),
                 DropdownMenuItem(value: 'Inactive', child: Text('Inactive')),
               ],
-              onChanged: (value) {
-                setState(() {
-                  selectedStatus = value!;
-                });
-              },
+              onChanged: (value) => setState(() => selectedStatus = value!),
             ),
             const SizedBox(height: 16),
 
             Row(
               children: [
-                const Text(
-                  'Seats:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                ),
+                const Text('Seats:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                 const SizedBox(width: 16),
                 IconButton(
                   icon: const Icon(Icons.remove_circle_outline),
-                  onPressed: selectedSeats > 1
-                      ? () => setState(() => selectedSeats--)
-                      : null,
+                  onPressed: selectedSeats > 1 ? () => setState(() => selectedSeats--) : null,
                 ),
                 Container(
                   width: 50,
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '$selectedSeats',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                  decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(8)),
+                  child: Text('$selectedSeats', textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
                 IconButton(
                   icon: const Icon(Icons.add_circle_outline),
-                  onPressed: selectedSeats < 20
-                      ? () => setState(() => selectedSeats++)
-                      : null,
+                  onPressed: selectedSeats < 20 ? () => setState(() => selectedSeats++) : null,
                 ),
               ],
             ),
@@ -142,19 +100,9 @@ class _AddTableDialogState extends State<AddTableDialog> {
 
             Row(
               children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
-                  ),
-                ),
+                Expanded(child: TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel'))),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _addTable,
-                    child: const Text('Add Table'),
-                  ),
-                ),
+                Expanded(child: ElevatedButton(onPressed: _addTable, child: const Text('Add Table'))),
               ],
             ),
           ],
@@ -165,37 +113,21 @@ class _AddTableDialogState extends State<AddTableDialog> {
 
   void _addTable() {
     if (tableNumberController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter table number')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter table number')));
       return;
     }
 
     if (int.tryParse(tableNumberController.text) == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Table number must be a number')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Table number must be a number')));
       return;
     }
 
-    TableStatus tableStatus;
-    switch (selectedStatus) {
-      case 'Active':
-        tableStatus = TableStatus.free;
-        break;
-      case 'Inactive':
-        tableStatus = TableStatus.cleaning;
-        break;
-      default:
-        tableStatus = TableStatus.free;
-    }
+    TableStatus tableStatus = selectedStatus == 'Active' ? TableStatus.free : TableStatus.cleaning;
 
     final newTable = TableModel(
       id: 0,
       number: tableNumberController.text,
-      name: tableNameController.text.isEmpty
-          ? tableNumberController.text
-          : tableNameController.text,
+      name: tableNameController.text.isEmpty ? tableNumberController.text : tableNameController.text,
       status: tableStatus,
       guests: 0,
       maxGuests: selectedSeats,

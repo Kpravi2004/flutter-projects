@@ -114,6 +114,10 @@ class _SeatConfigDialogState extends State<SeatConfigDialog> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: _saveSeats,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppConstants.tealPrimary,
+                        foregroundColor: Colors.white,
+                      ),
                       child: const Text('Save Seats'),
                     ),
                   ),
@@ -130,6 +134,7 @@ class _SeatConfigDialogState extends State<SeatConfigDialog> {
       _isSaving = true;
       _errorMessage = null;
     });
+    int successCount = 0;
     try {
       for (var seat in seats) {
         await ApiService.createSeat(
@@ -138,16 +143,17 @@ class _SeatConfigDialogState extends State<SeatConfigDialog> {
           status: seat.status,
           colorCode: seat.colorCode,
         );
+        successCount++;
+        print('Seat ${seat.seatNo} created');
       }
-      if (mounted) {
-        Navigator.pop(context, true);
-      }
+      await Future.delayed(const Duration(milliseconds: 200));
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
       print('Error creating seats: $e');
       if (mounted) {
         setState(() {
           _isSaving = false;
-          _errorMessage = 'Failed to create seats. Please try again.';
+          _errorMessage = 'Failed after $successCount seats. Error: $e';
         });
       }
     }

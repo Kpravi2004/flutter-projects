@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/waiter_model.dart';
-import '../utils/helpers.dart';
+import '../utils/constants.dart';
 
 class AddWaiterDialog extends StatefulWidget {
   final Function(WaiterModel) onWaiterAdded;
@@ -16,7 +16,6 @@ class AddWaiterDialog extends StatefulWidget {
 
 class _AddWaiterDialogState extends State<AddWaiterDialog> {
   final TextEditingController nameController = TextEditingController();
-  final TextEditingController codeController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -33,25 +32,15 @@ class _AddWaiterDialogState extends State<AddWaiterDialog> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-
             TextField(
               controller: nameController,
               decoration: const InputDecoration(
-                labelText: 'Waiter Name',
+                labelText: 'Waiter Name *',
                 border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            TextField(
-              controller: codeController,
-              decoration: const InputDecoration(
-                labelText: 'Waiter Code',
-                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person),
               ),
             ),
             const SizedBox(height: 20),
-
             Row(
               children: [
                 Expanded(
@@ -64,6 +53,10 @@ class _AddWaiterDialogState extends State<AddWaiterDialog> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _addWaiter,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppConstants.tealPrimary,
+                      foregroundColor: Colors.white,
+                    ),
                     child: const Text('Add Waiter'),
                   ),
                 ),
@@ -76,20 +69,18 @@ class _AddWaiterDialogState extends State<AddWaiterDialog> {
   }
 
   void _addWaiter() {
-    if (nameController.text.isEmpty || codeController.text.isEmpty) {
+    if (nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields')),
+        const SnackBar(content: Text('Please enter waiter name')),
       );
       return;
     }
 
     final newWaiter = WaiterModel(
-      id: Helpers.generateId(),
+      id: 0,
       name: nameController.text,
-      code: codeController.text,
     );
 
     widget.onWaiterAdded(newWaiter);
-    Navigator.pop(context);
   }
 }

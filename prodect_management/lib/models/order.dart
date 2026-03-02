@@ -31,18 +31,18 @@ class Order {
       status: json['status'],
       createdAt: DateTime.parse(json['createdAt']),
       items: (json['items'] as List?)
-              ?.map((i) => OrderItem.fromJson(i))
-              .toList() ??
+          ?.map((i) => OrderItem.fromJson(i))
+          .toList() ??
           [],
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'orderCode': orderCode,
-        'tableId': tableId,
-        'waiterId': waiterId,
-        'total': total,
-        'status': status,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'orderCode': orderCode,
+    'tableId': tableId,
+    'waiterId': waiterId,
+    'total': total,
+    'status': status,
+    'createdAt': createdAt.toIso8601String(),
+  };
 }

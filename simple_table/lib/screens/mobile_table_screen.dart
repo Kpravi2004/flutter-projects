@@ -23,7 +23,7 @@ class MobileTableScreen extends StatefulWidget {
 class _MobileTableScreenState extends State<MobileTableScreen> {
   List<TableModel> tables = [];
   List<WaiterModel> waiters = [];
-  List<String> floors = []; // dynamically filled from API
+  List<String> floors = [];
   String selectedFloor = 'All Floors';
   String selectedStatus = 'All';
   int? selectedSize;
@@ -37,12 +37,11 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
 
   final ScrollController _scrollController = ScrollController();
 
-  // ==================== LIFECYCLE ====================
-
   @override
   void initState() {
     super.initState();
     _fetchTables();
+    _fetchWaiters();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) setState(() => _currentTime = DateTime.now());
     });
@@ -56,44 +55,26 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
     super.dispose();
   }
 
-  // ==================== API CALLS ====================
+  // -------------------- API CALLS --------------------
 
-  Future<void> _fetchTables() async {
-    setState(() => isLoading = true);
+
+
+  Future<void> _fetchWaiters() async {
     try {
-      List<TableModel> fetchedTables = await ApiService.fetchTables();
-      Set<String> uniqueFloors = {};
-      for (var table in fetchedTables) {
-        if (table.floor.isNotEmpty) {
-          uniqueFloors.add(table.floor.trim());
-        }
-      }
-      List<String> floorList = uniqueFloors.toList()..sort();
-      setState(() {
-        tables = fetchedTables;
-        floors = floorList;
-        if (floors.isEmpty) floors = ['Main Floor']; // fallback
-        if (selectedFloor != 'All Floors' && !floors.contains(selectedFloor)) {
-          selectedFloor = 'All Floors';
-        }
-        isLoading = false;
-      });
+      List<WaiterModel> fetched = await ApiService.fetchWaiters();
+      if (mounted) setState(() => waiters = fetched);
     } catch (e) {
-      print('Error fetching tables: $e');
-      setState(() {
-        isLoading = false;
-        if (floors.isEmpty) floors = ['Main Floor'];
-      });
-      _showError('Failed to load tables. Check connection.');
+      print('Error fetching waiters: $e');
+      _showError('Failed to load waiters');
     }
   }
 
-  // ==================== UI HELPERS ====================
+  // -------------------- UI HELPERS --------------------
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: const TextStyle(color: Colors.white)),
+        content: Text(message),
         backgroundColor: AppConstants.errorRed,
         behavior: SnackBarBehavior.floating,
       ),
@@ -103,32 +84,26 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: const TextStyle(color: Colors.white)),
+        content: Text(message),
         backgroundColor: AppConstants.successGreen,
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  String _getFormattedTime() {
-    return '${_currentTime.hour.toString().padLeft(2, '0')}:${_currentTime.minute.toString().padLeft(2, '0')}';
-  }
-
+  String _getFormattedTime() => '${_currentTime.hour.toString().padLeft(2, '0')}:${_currentTime.minute.toString().padLeft(2, '0')}';
   String _getFormattedDate() {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     return '${_currentTime.day} ${months[_currentTime.month - 1]}';
   }
 
   Color _getStatusColor(TableStatus status) {
     switch (status) {
-      case TableStatus.free: return AppConstants.successGreen;
-      case TableStatus.occupied: return AppConstants.errorRed;
-      case TableStatus.reserved: return AppConstants.warningOrange;
-      case TableStatus.cleaning: return AppConstants.cleaningBlue;
-      case TableStatus.billed: return AppConstants.billedPurple;
+      case TableStatus.free:   return AppConstants.successGreen;
+      case TableStatus.occupied:return AppConstants.errorRed;
+      case TableStatus.reserved:return AppConstants.warningOrange;
+      case TableStatus.cleaning:return AppConstants.cleaningBlue;
+      case TableStatus.billed:  return AppConstants.billedPurple;
     }
   }
 
@@ -138,11 +113,11 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
       if (selectedStatus != 'All') {
         TableStatus status;
         switch (selectedStatus) {
-          case 'Free': status = TableStatus.free; break;
-          case 'Occupied': status = TableStatus.occupied; break;
-          case 'Reserved': status = TableStatus.reserved; break;
-          case 'Cleaning': status = TableStatus.cleaning; break;
-          case 'Billed': status = TableStatus.billed; break;
+          case 'Free':      status = TableStatus.free; break;
+          case 'Occupied':  status = TableStatus.occupied; break;
+          case 'Reserved':  status = TableStatus.reserved; break;
+          case 'Cleaning':  status = TableStatus.cleaning; break;
+          case 'Billed':    status = TableStatus.billed; break;
           default: return true;
         }
         if (table.status != status) return false;
@@ -153,13 +128,13 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
     }).toList();
   }
 
-  // ==================== BUILD UI ====================
+  // -------------------- BUILD --------------------
 
   @override
   Widget build(BuildContext context) {
-    int totalTables = filteredTables.length;
-    int freeTables = filteredTables.where((t) => t.status == TableStatus.free).length;
-    int occupiedTables = filteredTables.where((t) => t.status == TableStatus.occupied).length;
+    int total = filteredTables.length;
+    int free = filteredTables.where((t) => t.status == TableStatus.free).length;
+    int occ = filteredTables.where((t) => t.status == TableStatus.occupied).length;
 
     return Scaffold(
       backgroundColor: AppConstants.lightBackground,
@@ -167,15 +142,26 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            _buildMobileStats(totalTables, freeTables, occupiedTables),
+            _buildMobileStats(total, free, occ),
             _buildMobileSearch(),
             _buildFilterRow(),
             _buildMobileFloorChips(),
             Expanded(
               child: isLoading
                   ? const Center(child: CircularProgressIndicator(color: AppConstants.tealPrimary))
+                  : filteredTables.isEmpty
+                  ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.table_restaurant, size: 64, color: Colors.grey),
+                    const SizedBox(height: 16),
+                    Text('No tables found', style: TextStyle(color: AppConstants.textSecondary)),
+                  ],
+                ),
+              )
                   : RefreshIndicator(
-                onRefresh: _fetchTables,
+                onRefresh: () => _fetchTables(showLoading: true),
                 color: AppConstants.tealPrimary,
                 backgroundColor: AppConstants.lightSurface,
                 child: GridView.builder(
@@ -189,12 +175,20 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                   ),
                   itemCount: filteredTables.length,
                   itemBuilder: (context, index) {
-                    final table = filteredTables[index];
-                    return TableCard(
-                      table: table,
-                      onTap: () => _showTableOptions(table),
-                      onLongPress: () => _showEditTableDialog(table),
-                    );
+                    try {
+                      final table = filteredTables[index];
+                      return TableCard(
+                        table: table,
+                        onTap: () => _showTableOptions(table),
+                        onLongPress: () => _showEditTableDialog(table),
+                      );
+                    } catch (e, stack) {
+                      print('Error building table card at index $index: $e\n$stack');
+                      return Container(
+                        color: Colors.red,
+                        child: Center(child: Text('Error', style: TextStyle(color: Colors.white))),
+                      );
+                    }
                   },
                 ),
               ),
@@ -205,7 +199,7 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
     );
   }
 
-  // ==================== UI COMPONENTS ====================
+  // -------------------- UI COMPONENTS --------------------
 
   PreferredSizeWidget _buildMobileAppBar() {
     return AppBar(
@@ -218,21 +212,8 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'SENTINIX',
-                style: TextStyle(
-                  color: AppConstants.tealDark,
-                  fontSize: AppConstants.fontSizeLg,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                _getFormattedDate(),
-                style: TextStyle(
-                  color: AppConstants.textSecondary,
-                  fontSize: AppConstants.fontSizeXs,
-                ),
-              ),
+              Text('SENTINIX', style: TextStyle(color: AppConstants.tealDark, fontSize: AppConstants.fontSizeLg, fontWeight: FontWeight.bold)),
+              Text(_getFormattedDate(), style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeXs)),
             ],
           ),
           const Spacer(),
@@ -241,78 +222,38 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
             decoration: BoxDecoration(
               color: AppConstants.lightBackground,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppConstants.tealPrimary.withOpacity(0.3),
-                width: AppConstants.borderThin,
-              ),
+              border: Border.all(color: AppConstants.tealPrimary.withOpacity(0.3), width: AppConstants.borderThin),
             ),
-            child: Text(
-              _getFormattedTime(),
-              style: TextStyle(
-                color: AppConstants.tealDark,
-                fontSize: AppConstants.fontSizeSm,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: Text(_getFormattedTime(), style: TextStyle(color: AppConstants.tealDark, fontSize: AppConstants.fontSizeSm, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMobileStats(int total, int free, int occupied) {
+  Widget _buildMobileStats(int total, int free, int occ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         children: [
-          _buildStatCard(
-            icon: Icons.table_restaurant,
-            value: '$total',
-            label: 'Total',
-            gradientColors: [AppConstants.tealLight, AppConstants.tealPrimary],
-          ),
+          _buildStatCard(Icons.table_restaurant, '$total', 'Total', [AppConstants.tealLight, AppConstants.tealPrimary]),
           const SizedBox(width: 4),
-          _buildStatCard(
-            icon: Icons.check_circle,
-            value: '$free',
-            label: 'Free',
-            gradientColors: [AppConstants.successGreen.withOpacity(0.7), AppConstants.successGreen],
-          ),
+          _buildStatCard(Icons.check_circle, '$free', 'Free', [AppConstants.successGreen.withOpacity(0.7), AppConstants.successGreen]),
           const SizedBox(width: 4),
-          _buildStatCard(
-            icon: Icons.people,
-            value: '$occupied',
-            label: 'Occ',
-            gradientColors: [AppConstants.errorRed.withOpacity(0.7), AppConstants.errorRed],
-          ),
+          _buildStatCard(Icons.people, '$occ', 'Occ', [AppConstants.errorRed.withOpacity(0.7), AppConstants.errorRed]),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard({
-    required IconData icon,
-    required String value,
-    required String label,
-    required List<Color> gradientColors,
-  }) {
+  Widget _buildStatCard(IconData icon, String value, String label, List<Color> gradientColors) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: gradientColors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: LinearGradient(colors: gradientColors, begin: Alignment.topLeft, end: Alignment.bottomRight),
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 6, offset: const Offset(0, 3))],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -323,21 +264,8 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: AppConstants.fontSizeMd,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: AppConstants.fontSizeXs,
-                  ),
-                ),
+                Text(value, style: const TextStyle(color: Colors.white, fontSize: AppConstants.fontSizeMd, fontWeight: FontWeight.bold)),
+                Text(label, style: const TextStyle(color: Colors.white70, fontSize: AppConstants.fontSizeXs)),
               ],
             ),
           ],
@@ -354,36 +282,17 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
         decoration: BoxDecoration(
           color: AppConstants.lightSurface,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: AppConstants.tealPrimary.withOpacity(0.2),
-            width: AppConstants.borderThin,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          border: Border.all(color: AppConstants.tealPrimary.withOpacity(0.2), width: AppConstants.borderThin),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 4, offset: const Offset(0, 2))],
         ),
         child: TextField(
           controller: _searchController,
-          onChanged: (value) => setState(() => _searchQuery = value),
-          style: TextStyle(
-            color: AppConstants.textPrimary,
-            fontSize: AppConstants.fontSizeSm,
-          ),
+          onChanged: (v) => setState(() => _searchQuery = v),
+          style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeSm),
           decoration: InputDecoration(
             hintText: 'Search tables...',
-            hintStyle: TextStyle(
-              color: AppConstants.textHint,
-              fontSize: AppConstants.fontSizeXs,
-            ),
-            prefixIcon: Icon(
-              Icons.search,
-              color: AppConstants.tealPrimary,
-              size: 18,
-            ),
+            hintStyle: TextStyle(color: AppConstants.textHint, fontSize: AppConstants.fontSizeXs),
+            prefixIcon: Icon(Icons.search, color: AppConstants.tealPrimary, size: 18),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(vertical: 12),
           ),
@@ -397,38 +306,32 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         children: [
-          Expanded(
-            child: _buildDropdown(
-              value: selectedStatus,
-              items: const [
-                DropdownMenuItem(value: 'All', child: Text('All Status')),
-                DropdownMenuItem(value: 'Free', child: Text('Free')),
-                DropdownMenuItem(value: 'Occupied', child: Text('Occupied')),
-                DropdownMenuItem(value: 'Reserved', child: Text('Reserved')),
-                DropdownMenuItem(value: 'Cleaning', child: Text('Cleaning')),
-                DropdownMenuItem(value: 'Billed', child: Text('Billed')),
-              ],
-              onChanged: (value) => setState(() => selectedStatus = value!),
-            ),
-          ),
+          Expanded(child: _buildDropdown(
+            value: selectedStatus,
+            items: const [
+              DropdownMenuItem(value: 'All', child: Text('All Status')),
+              DropdownMenuItem(value: 'Free', child: Text('Free')),
+              DropdownMenuItem(value: 'Occupied', child: Text('Occupied')),
+              DropdownMenuItem(value: 'Reserved', child: Text('Reserved')),
+              DropdownMenuItem(value: 'Cleaning', child: Text('Cleaning')),
+              DropdownMenuItem(value: 'Billed', child: Text('Billed')),
+            ],
+            onChanged: (v) => setState(() => selectedStatus = v!),
+          )),
           const SizedBox(width: 6),
-          Expanded(
-            child: _buildDropdown(
-              value: selectedSize?.toString() ?? 'All',
-              items: const [
-                DropdownMenuItem(value: 'All', child: Text('All Sizes')),
-                DropdownMenuItem(value: '2', child: Text('2 Seats')),
-                DropdownMenuItem(value: '4', child: Text('4 Seats')),
-                DropdownMenuItem(value: '6', child: Text('6 Seats')),
-                DropdownMenuItem(value: '8', child: Text('8 Seats')),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  selectedSize = value == 'All' ? null : int.parse(value!);
-                });
-              },
-            ),
-          ),
+          Expanded(child: _buildDropdown(
+            value: selectedSize?.toString() ?? 'All',
+            items: const [
+              DropdownMenuItem(value: 'All', child: Text('All Sizes')),
+              DropdownMenuItem(value: '2', child: Text('2 Seats')),
+              DropdownMenuItem(value: '4', child: Text('4 Seats')),
+              DropdownMenuItem(value: '6', child: Text('6 Seats')),
+              DropdownMenuItem(value: '8', child: Text('8 Seats')),
+            ],
+            onChanged: (v) {
+              setState(() { selectedSize = v == 'All' ? null : int.parse(v!); });
+            },
+          )),
           const SizedBox(width: 6),
           _buildIconButton(Icons.add, 'Add', AppConstants.tealPrimary, _showAddTableDialog),
           const SizedBox(width: 4),
@@ -438,42 +341,22 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
     );
   }
 
-  Widget _buildDropdown({
-    required String value,
-    required List<DropdownMenuItem<String>> items,
-    required void Function(String?) onChanged,
-  }) {
+  Widget _buildDropdown({required String value, required List<DropdownMenuItem<String>> items, required void Function(String?) onChanged}) {
     return Container(
       height: 46,
       padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: AppConstants.lightSurface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppConstants.tealPrimary.withOpacity(0.2),
-          width: AppConstants.borderThin,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: AppConstants.tealPrimary.withOpacity(0.2), width: AppConstants.borderThin),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 4, offset: const Offset(0, 2))],
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
           dropdownColor: AppConstants.lightSurface,
-          style: TextStyle(
-            color: AppConstants.textPrimary,
-            fontSize: AppConstants.fontSizeSm,
-          ),
-          icon: Icon(
-            Icons.arrow_drop_down,
-            color: AppConstants.tealPrimary,
-            size: 20,
-          ),
+          style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeSm),
+          icon: Icon(Icons.arrow_drop_down, color: AppConstants.tealPrimary, size: 20),
           items: items,
           onChanged: onChanged,
           isExpanded: true,
@@ -491,30 +374,14 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
         decoration: BoxDecoration(
           color: AppConstants.lightSurface,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: color.withOpacity(0.3),
-            width: AppConstants.borderThin,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          border: Border.all(color: color.withOpacity(0.3), width: AppConstants.borderThin),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 4, offset: const Offset(0, 2))],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: color, size: 20),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: AppConstants.fontSizeXs,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            Text(label, style: TextStyle(color: color, fontSize: AppConstants.fontSizeXs, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -550,14 +417,7 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
             color: isSelected ? AppConstants.tealPrimary : AppConstants.tealPrimary.withOpacity(0.2),
             width: AppConstants.borderThin,
           ),
-          boxShadow: [
-            if (!isSelected)
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-          ],
+          boxShadow: isSelected ? null : [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 4, offset: const Offset(0, 2))],
         ),
         child: Center(
           child: Text(
@@ -582,37 +442,22 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
         decoration: BoxDecoration(
           color: AppConstants.lightSurface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppConstants.tealPrimary.withOpacity(0.2),
-            width: AppConstants.borderThin,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          border: Border.all(color: AppConstants.tealPrimary.withOpacity(0.2), width: AppConstants.borderThin),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 4, offset: const Offset(0, 2))],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.add, color: AppConstants.tealPrimary, size: 16),
             const SizedBox(width: 4),
-            Text(
-              'Add',
-              style: TextStyle(
-                color: AppConstants.textPrimary,
-                fontSize: AppConstants.fontSizeSm,
-              ),
-            ),
+            Text('Add', style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeSm)),
           ],
         ),
       ),
     );
   }
 
-  // ==================== DIALOGS ====================
+  // -------------------- DIALOGS --------------------
 
   void _showTableOptions(TableModel table) {
     showDialog(
@@ -630,43 +475,20 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(table.status).withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.table_restaurant,
-                      color: _getStatusColor(table.status),
-                      size: 28,
-                    ),
+                    decoration: BoxDecoration(color: _getStatusColor(table.status).withOpacity(0.2), shape: BoxShape.circle),
+                    child: Icon(Icons.table_restaurant, color: _getStatusColor(table.status), size: 28),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Table ${table.number}',
-                          style: TextStyle(
-                            color: AppConstants.textPrimary,
-                            fontSize: AppConstants.fontSizeLg,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          '${table.maxGuests} seats • ${table.floor}',
-                          style: TextStyle(
-                            color: AppConstants.textSecondary,
-                            fontSize: AppConstants.fontSizeSm,
-                          ),
-                        ),
+                        Text('Table ${table.number}', style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeLg, fontWeight: FontWeight.bold)),
+                        Text('${table.maxGuests} seats • ${table.floor}', style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeSm)),
                       ],
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(Icons.close, color: AppConstants.textSecondary),
-                    onPressed: () => Navigator.pop(context),
-                  ),
+                  IconButton(icon: Icon(Icons.close, color: AppConstants.textSecondary), onPressed: () => Navigator.pop(context)),
                 ],
               ),
               const SizedBox(height: 20),
@@ -730,36 +552,23 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
 
   Widget _buildActionTile(IconData icon, String label, Color color, VoidCallback onTap) {
     return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, color: color, size: 22),
-      ),
-      title: Text(
-        label,
-        style: TextStyle(
-          color: AppConstants.textPrimary,
-          fontSize: AppConstants.fontSizeMd,
-        ),
-      ),
+      leading: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle), child: Icon(icon, color: color, size: 22)),
+      title: Text(label, style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeMd)),
       trailing: Icon(Icons.arrow_forward_ios, color: color, size: 16),
       onTap: onTap,
     );
   }
 
   void _showAddFloorDialog() {
-    TextEditingController floorController = TextEditingController();
+    TextEditingController c = TextEditingController();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppConstants.lightSurface,
         title: const Text('Add Floor', style: TextStyle(color: AppConstants.textPrimary)),
         content: TextField(
-          controller: floorController,
-          style: TextStyle(color: AppConstants.textPrimary),
+          controller: c,
+          style: const TextStyle(color: AppConstants.textPrimary),
           decoration: InputDecoration(
             labelText: 'Floor Name',
             labelStyle: TextStyle(color: AppConstants.tealPrimary),
@@ -767,18 +576,12 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: AppConstants.textSecondary)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: TextStyle(color: AppConstants.textSecondary))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.tealPrimary,
-              foregroundColor: Colors.white,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppConstants.tealPrimary, foregroundColor: Colors.white),
             onPressed: () {
-              if (floorController.text.isNotEmpty) {
-                setState(() => floors.add(floorController.text.trim()));
+              if (c.text.isNotEmpty) {
+                setState(() => floors.add(c.text.trim()));
                 Navigator.pop(context);
               }
             },
@@ -789,6 +592,44 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
     );
   }
 
+  Future<void> _fetchTables({bool showLoading = true}) async {
+    if (!mounted) return;
+    if (showLoading) setState(() => isLoading = true);
+    try {
+      print('📡 Fetching tables...');
+      List<TableModel> fetchedTables = await ApiService.fetchTables();
+      if (!mounted) return;
+
+      print('✅ Fetched ${fetchedTables.length} tables');
+      if (fetchedTables.isNotEmpty) {
+        print('   First table ID: ${fetchedTables[0].id}, number: ${fetchedTables[0].number}');
+      }
+
+      Set<String> uniqueFloors = {};
+      for (var table in fetchedTables) {
+        if (table.floor.isNotEmpty) uniqueFloors.add(table.floor.trim());
+      }
+      List<String> floorList = uniqueFloors.toList()..sort();
+
+      setState(() {
+        tables = fetchedTables;
+        floors = floorList.isEmpty ? ['Main Floor'] : floorList;
+        if (selectedFloor != 'All Floors' && !floors.contains(selectedFloor)) {
+          selectedFloor = 'All Floors';
+        }
+        if (showLoading) isLoading = false;
+      });
+
+      print('🔄 setState called, tables.length = ${tables.length}');
+      print('   filteredTables length = ${filteredTables.length}');
+    } catch (e, stack) {
+      print('❌ Error fetching tables: $e\n$stack');
+      if (!mounted) return;
+      if (showLoading) setState(() => isLoading = false);
+      _showError('Failed to load tables: $e');
+    }
+  }
+
   void _showAddTableDialog() {
     showDialog(
       context: context,
@@ -797,14 +638,15 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
         currentFloor: selectedFloor == 'All Floors' ? floors.first : selectedFloor,
         onTableAdded: (newTable) async {
           Navigator.of(dialogContext).pop(); // close AddTableDialog
+          if (!mounted) return;
           setState(() => isLoading = true);
           try {
-            print('Creating table with data: ${newTable.toJson()}');
+            print('📝 Creating table: ${newTable.toJson()}');
             TableModel created = await ApiService.createTable(newTable.toJson());
-            print('Table created: ${created.id}');
+            if (!mounted) return;
+            print('✅ Table created with ID: ${created.id}');
             _showSuccess('Table created with ID ${created.id}');
 
-            // Optionally configure seats
             bool? configured = await showDialog(
               context: context,
               builder: (ctx) => SeatConfigDialog(
@@ -812,28 +654,49 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                 totalSeats: created.maxGuests,
               ),
             );
+            print('🔧 Seat configuration result: $configured');
 
-            await _fetchTables();
+            if (!mounted) return;
+
+            // Wait a moment for backend to settle
+            await Future.delayed(const Duration(milliseconds: 500));
+            print('🔄 Refreshing tables after seat config...');
+            await _fetchTables(showLoading: false);
+
             if (configured == true) {
               _showSuccess('Seats configured');
             }
-          } catch (e) {
-            print('Error creating table: $e');
+          } catch (e, stack) {
+            print('❌ Error in table creation: $e\n$stack');
+            if (!mounted) return;
             _showError('Failed to create table: $e');
-            await _fetchTables();
+            await _fetchTables(showLoading: false);
           } finally {
-            setState(() => isLoading = false);
+            if (mounted) {
+              setState(() => isLoading = false);
+              print('🏁 Finished table creation, isLoading = false');
+            }
           }
         },
       ),
     );
   }
-
   void _showAddWaiterDialog() {
     showDialog(
       context: context,
-      builder: (context) => AddWaiterDialog(
-        onWaiterAdded: (newWaiter) => setState(() => waiters.add(newWaiter)),
+      builder: (dialogContext) => AddWaiterDialog(
+        onWaiterAdded: (newWaiter) async {
+          Navigator.of(dialogContext).pop();
+          try {
+            WaiterModel created = await ApiService.createWaiter(newWaiter.name);
+            if (!mounted) return;
+            setState(() => waiters.add(created));
+            _showSuccess('Waiter ${created.name} added');
+          } catch (e) {
+            if (!mounted) return;
+            _showError('Failed to add waiter: $e');
+          }
+        },
       ),
     );
   }
@@ -865,27 +728,18 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppConstants.lightSurface,
-        title: Text(
-          'Select Guests',
-          style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeLg),
-        ),
+        title: Text('Select Guests', style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeLg)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Max: ${table.maxGuests}',
-              style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeSm),
-            ),
+            Text('Max: ${table.maxGuests}', style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeSm)),
             const SizedBox(height: 16),
             Wrap(
               spacing: 8,
               children: List.generate(table.maxGuests, (index) {
                 int count = index + 1;
                 return ChoiceChip(
-                  label: Text(
-                    '$count',
-                    style: TextStyle(fontSize: AppConstants.fontSizeSm),
-                  ),
+                  label: Text('$count', style: const TextStyle(fontSize: AppConstants.fontSizeSm)),
                   selected: table.guests == count,
                   onSelected: (selected) async {
                     setState(() {
@@ -896,9 +750,7 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                     Navigator.pop(context);
                     try {
                       await ApiService.updateTable(table);
-                      if (table.maxGuests >= 6 && count >= 4) {
-                        _showBillSplitOption(table);
-                      }
+                      if (table.maxGuests >= 6 && count >= 4) _showBillSplitOption(table);
                     } catch (e) {
                       _showError('Failed to update');
                       _fetchTables();
@@ -922,20 +774,11 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: AppConstants.lightSurface,
         title: const Text('Split Bill?', style: TextStyle(color: AppConstants.textPrimary)),
-        content: Text(
-          'Split for multiple families?',
-          style: TextStyle(color: AppConstants.textSecondary),
-        ),
+        content: Text('Split for multiple families?', style: TextStyle(color: AppConstants.textSecondary)),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('No', style: TextStyle(color: AppConstants.textSecondary)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('No', style: TextStyle(color: AppConstants.textSecondary))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.tealPrimary,
-              foregroundColor: Colors.white,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppConstants.tealPrimary, foregroundColor: Colors.white),
             onPressed: () {
               Navigator.pop(context);
               _showBillSplitDialog(table);
@@ -958,16 +801,16 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
   }
 
   void _showBillEntryDialog(TableModel table) {
-    TextEditingController amountController = TextEditingController();
+    TextEditingController amount = TextEditingController();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppConstants.lightSurface,
         title: const Text('Add Bill', style: TextStyle(color: AppConstants.textPrimary)),
         content: TextField(
-          controller: amountController,
+          controller: amount,
           keyboardType: TextInputType.number,
-          style: TextStyle(color: AppConstants.textPrimary),
+          style: const TextStyle(color: AppConstants.textPrimary),
           decoration: InputDecoration(
             labelText: 'Amount',
             labelStyle: TextStyle(color: AppConstants.tealPrimary),
@@ -976,18 +819,12 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: AppConstants.textSecondary)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: TextStyle(color: AppConstants.textSecondary))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.tealPrimary,
-              foregroundColor: Colors.white,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppConstants.tealPrimary, foregroundColor: Colors.white),
             onPressed: () {
-              if (amountController.text.isNotEmpty) {
-                setState(() => table.amount = double.parse(amountController.text));
+              if (amount.text.isNotEmpty) {
+                setState(() => table.amount = double.parse(amount.text));
                 Navigator.pop(context);
               }
             },
@@ -999,79 +836,48 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
   }
 
   void _showAddGuestsDialog(TableModel table) {
-    int currentGuests = table.guests;
-    int maxGuests = table.maxGuests;
-
+    int current = table.guests;
+    int max = table.maxGuests;
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
             backgroundColor: AppConstants.lightSurface,
-            title: Text(
-              'Add Guests',
-              style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeLg),
-            ),
+            title: Text('Add Guests', style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeLg)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Current: $currentGuests  |  Max: $maxGuests',
-                  style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeSm),
-                ),
+                Text('Current: $current  |  Max: $max', style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeSm)),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    IconButton(
-                      icon: Icon(Icons.remove_circle, color: AppConstants.errorRed, size: 36),
-                      onPressed: currentGuests > 0 ? () => setState(() => currentGuests--) : null,
-                    ),
+                    IconButton(icon: Icon(Icons.remove_circle, color: AppConstants.errorRed, size: 36), onPressed: current > 0 ? () => setState(() => current--) : null),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 20),
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppConstants.tealPrimary),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '$currentGuests',
-                        style: TextStyle(
-                          color: AppConstants.textPrimary,
-                          fontSize: AppConstants.fontSizeXl,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      decoration: BoxDecoration(border: Border.all(color: AppConstants.tealPrimary), borderRadius: BorderRadius.circular(8)),
+                      child: Text('$current', style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeXl, fontWeight: FontWeight.bold)),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.add_circle, color: AppConstants.successGreen, size: 36),
-                      onPressed: currentGuests < maxGuests ? () => setState(() => currentGuests++) : null,
-                    ),
+                    IconButton(icon: Icon(Icons.add_circle, color: AppConstants.successGreen, size: 36), onPressed: current < max ? () => setState(() => current++) : null),
                   ],
                 ),
               ],
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Cancel', style: TextStyle(color: AppConstants.textSecondary)),
-              ),
+              TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: TextStyle(color: AppConstants.textSecondary))),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppConstants.tealPrimary,
-                  foregroundColor: Colors.white,
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: AppConstants.tealPrimary, foregroundColor: Colors.white),
                 onPressed: () async {
                   this.setState(() {
-                    table.guests = currentGuests;
+                    table.guests = current;
                     table.updateSeatsFromGuestCount();
                   });
                   Navigator.pop(context);
                   try {
                     await ApiService.updateTable(table);
-                    if (table.maxGuests >= 6 && currentGuests >= 4) {
-                      _showBillSplitOption(table);
-                    }
+                    if (table.maxGuests >= 6 && current >= 4) _showBillSplitOption(table);
                   } catch (e) {
                     _showError('Failed to update');
                     _fetchTables();
@@ -1094,9 +900,7 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
       table.waiterId = null;
       table.waiterName = null;
       table.bills = null;
-      for (var seat in table.seats) {
-        seat.status = 'Free';
-      }
+      for (var seat in table.seats) seat.status = 'Free';
     });
     try {
       await ApiService.updateTable(table);
@@ -1114,7 +918,6 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
     String tempFloor = table.floor;
     String tempStatus = table.status == TableStatus.free ? 'Active' : 'Inactive';
 
-    // Work with a mutable copy of the seats list.
     List<SeatModel> tempSeats = table.seats.map((s) => SeatModel(
       id: s.id,
       seatNo: s.seatNo,
@@ -1136,136 +939,65 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'Edit Table',
-                    style: TextStyle(
-                      color: AppConstants.textPrimary,
-                      fontSize: AppConstants.fontSizeXl,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Text('Edit Table', style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeXl, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
-
-                  // Table Number
                   TextField(
                     controller: TextEditingController(text: tempNumber),
-                    onChanged: (value) => tempNumber = value,
+                    onChanged: (v) => tempNumber = v,
                     decoration: InputDecoration(
                       labelText: 'Table Number',
                       labelStyle: TextStyle(color: AppConstants.tealPrimary),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: AppConstants.tealPrimary.withOpacity(0.3),
-                          width: AppConstants.borderThin,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: AppConstants.tealPrimary,
-                          width: AppConstants.borderNormal,
-                        ),
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: AppConstants.tealPrimary.withOpacity(0.3), width: AppConstants.borderThin)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: AppConstants.tealPrimary, width: AppConstants.borderNormal)),
                     ),
                     style: TextStyle(color: AppConstants.textPrimary),
                   ),
                   const SizedBox(height: 12),
-
-                  // Table Name
                   TextField(
                     controller: TextEditingController(text: tempName),
-                    onChanged: (value) => tempName = value,
+                    onChanged: (v) => tempName = v,
                     decoration: InputDecoration(
                       labelText: 'Table Name',
                       labelStyle: TextStyle(color: AppConstants.tealPrimary),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: AppConstants.tealPrimary.withOpacity(0.3),
-                          width: AppConstants.borderThin,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: AppConstants.tealPrimary,
-                          width: AppConstants.borderNormal,
-                        ),
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: AppConstants.tealPrimary.withOpacity(0.3), width: AppConstants.borderThin)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: AppConstants.tealPrimary, width: AppConstants.borderNormal)),
                     ),
                     style: TextStyle(color: AppConstants.textPrimary),
                   ),
                   const SizedBox(height: 16),
-
-                  // Capacity and Status in one row
                   Row(
                     children: [
-                      // Capacity (step 1, range 1..20)
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Capacity',
-                              style: TextStyle(
-                                color: AppConstants.textSecondary,
-                                fontSize: AppConstants.fontSizeSm,
-                              ),
-                            ),
+                            Text('Capacity', style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeSm)),
                             const SizedBox(height: 4),
                             Container(
                               height: 46,
                               decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: AppConstants.tealPrimary.withOpacity(0.3),
-                                  width: AppConstants.borderThin,
-                                ),
+                                border: Border.all(color: AppConstants.tealPrimary.withOpacity(0.3), width: AppConstants.borderThin),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                 children: [
                                   IconButton(
-                                    icon: Icon(
-                                      Icons.remove_circle_outline,
-                                      color: tempMaxGuests > 1 ? AppConstants.errorRed : Colors.grey,
-                                    ),
-                                    onPressed: tempMaxGuests > 1
-                                        ? () => setState(() {
+                                    icon: Icon(Icons.remove_circle_outline, color: tempMaxGuests > 1 ? AppConstants.errorRed : Colors.grey),
+                                    onPressed: tempMaxGuests > 1 ? () => setState(() {
                                       tempMaxGuests--;
-                                      if (tempSeats.length > tempMaxGuests) {
-                                        tempSeats.removeLast();
-                                      }
-                                      if (table.guests > tempMaxGuests) {
-                                        table.guests = tempMaxGuests;
-                                      }
-                                    })
-                                        : null,
+                                      if (tempSeats.length > tempMaxGuests) tempSeats.removeLast();
+                                      if (table.guests > tempMaxGuests) table.guests = tempMaxGuests;
+                                    }) : null,
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
                                   ),
-                                  Text(
-                                    '$tempMaxGuests',
-                                    style: TextStyle(
-                                      color: AppConstants.textPrimary,
-                                      fontSize: AppConstants.fontSizeMd,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                                  Text('$tempMaxGuests', style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeMd, fontWeight: FontWeight.bold)),
                                   IconButton(
-                                    icon: Icon(
-                                      Icons.add_circle_outline,
-                                      color: tempMaxGuests < 20 ? AppConstants.successGreen : Colors.grey,
-                                    ),
-                                    onPressed: tempMaxGuests < 20
-                                        ? () => setState(() {
+                                    icon: Icon(Icons.add_circle_outline, color: tempMaxGuests < 20 ? AppConstants.successGreen : Colors.grey),
+                                    onPressed: tempMaxGuests < 20 ? () => setState(() {
                                       tempMaxGuests++;
                                       tempSeats.add(SeatModel(
                                         id: 0,
@@ -1274,8 +1006,7 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                                         colorCode: 'White',
                                         tableId: table.id,
                                       ));
-                                    })
-                                        : null,
+                                    }) : null,
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
                                   ),
@@ -1286,28 +1017,17 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-
-                      // Status
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Status',
-                              style: TextStyle(
-                                color: AppConstants.textSecondary,
-                                fontSize: AppConstants.fontSizeSm,
-                              ),
-                            ),
+                            Text('Status', style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeSm)),
                             const SizedBox(height: 4),
                             Container(
                               height: 46,
                               padding: const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: AppConstants.tealPrimary.withOpacity(0.3),
-                                  width: AppConstants.borderThin,
-                                ),
+                                border: Border.all(color: AppConstants.tealPrimary.withOpacity(0.3), width: AppConstants.borderThin),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: DropdownButtonHideUnderline(
@@ -1315,20 +1035,13 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                                   value: tempStatus,
                                   dropdownColor: AppConstants.lightSurface,
                                   isExpanded: true,
-                                  style: TextStyle(
-                                    color: AppConstants.textPrimary,
-                                    fontSize: AppConstants.fontSizeSm,
-                                  ),
-                                  icon: Icon(
-                                    Icons.arrow_drop_down,
-                                    color: AppConstants.tealPrimary,
-                                    size: 24,
-                                  ),
+                                  style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeSm),
+                                  icon: Icon(Icons.arrow_drop_down, color: AppConstants.tealPrimary, size: 24),
                                   items: const [
                                     DropdownMenuItem(value: 'Active', child: Text('Active')),
                                     DropdownMenuItem(value: 'Inactive', child: Text('Inactive')),
                                   ],
-                                  onChanged: (value) => setState(() => tempStatus = value!),
+                                  onChanged: (v) => setState(() => tempStatus = v!),
                                 ),
                               ),
                             ),
@@ -1338,27 +1051,16 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-
-                  // Floor
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Floor',
-                        style: TextStyle(
-                          color: AppConstants.textSecondary,
-                          fontSize: AppConstants.fontSizeSm,
-                        ),
-                      ),
+                      Text('Floor', style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeSm)),
                       const SizedBox(height: 4),
                       Container(
                         height: 46,
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         decoration: BoxDecoration(
-                          border: Border.all(
-                            color: AppConstants.tealPrimary.withOpacity(0.3),
-                            width: AppConstants.borderThin,
-                          ),
+                          border: Border.all(color: AppConstants.tealPrimary.withOpacity(0.3), width: AppConstants.borderThin),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: DropdownButtonHideUnderline(
@@ -1366,100 +1068,51 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                             value: tempFloor,
                             dropdownColor: AppConstants.lightSurface,
                             isExpanded: true,
-                            style: TextStyle(
-                              color: AppConstants.textPrimary,
-                              fontSize: AppConstants.fontSizeSm,
-                            ),
-                            icon: Icon(
-                              Icons.arrow_drop_down,
-                              color: AppConstants.tealPrimary,
-                              size: 24,
-                            ),
-                            items: floors.map((floor) {
-                              return DropdownMenuItem(value: floor, child: Text(floor));
-                            }).toList(),
-                            onChanged: (value) => setState(() => tempFloor = value!),
+                            style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeSm),
+                            icon: Icon(Icons.arrow_drop_down, color: AppConstants.tealPrimary, size: 24),
+                            items: floors.map((f) => DropdownMenuItem(value: f, child: Text(f))).toList(),
+                            onChanged: (v) => setState(() => tempFloor = v!),
                           ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 20),
-
-                  // Buttons
                   Row(
                     children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(
-                            'Cancel',
-                            style: TextStyle(
-                              color: AppConstants.textSecondary,
-                              fontSize: AppConstants.fontSizeMd,
-                            ),
-                          ),
-                        ),
-                      ),
+                      Expanded(child: TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeMd)))),
                       const SizedBox(width: 8),
                       Expanded(
                         child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppConstants.tealPrimary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
+                          style: ElevatedButton.styleFrom(backgroundColor: AppConstants.tealPrimary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                           onPressed: () async {
                             table.number = tempNumber;
                             table.name = tempName;
                             table.maxGuests = tempMaxGuests;
                             table.floor = tempFloor;
                             table.status = tempStatus == 'Active' ? TableStatus.free : TableStatus.cleaning;
-                            if (table.guests > table.maxGuests) {
-                              table.guests = table.maxGuests;
-                            }
+                            if (table.guests > table.maxGuests) table.guests = table.maxGuests;
 
                             Navigator.pop(context);
 
                             try {
                               await ApiService.updateTable(table);
-                              print('Table basic info updated');
 
-                              Set<int> originalSeatIds = table.seats.map((s) => s.id).where((id) => id > 0).toSet();
-                              Set<int> newSeatIds = tempSeats.map((s) => s.id).where((id) => id > 0).toSet();
+                              Set<int> origIds = table.seats.map((s) => s.id).where((id) => id > 0).toSet();
+                              Set<int> newIds = tempSeats.map((s) => s.id).where((id) => id > 0).toSet();
 
-                              List<int> toDelete = originalSeatIds.difference(newSeatIds).toList();
-                              for (int seatId in toDelete) {
-                                await ApiService.deleteSeat(seatId);
-                                print('Deleted seat $seatId');
+                              for (int sid in origIds.difference(newIds)) await ApiService.deleteSeat(sid);
+                              for (var seat in tempSeats.where((s) => s.id == 0)) {
+                                await ApiService.createSeat(tableId: table.id, seatNo: seat.seatNo, status: seat.status, colorCode: seat.colorCode);
                               }
-
-                              List<SeatModel> toCreate = tempSeats.where((s) => s.id == 0).toList();
-                              for (var seat in toCreate) {
-                                await ApiService.createSeat(
-                                  tableId: table.id,
-                                  seatNo: seat.seatNo,
-                                  status: seat.status,
-                                  colorCode: seat.colorCode,
-                                );
-                                print('Created seat ${seat.seatNo}');
-                              }
-
-                              List<SeatModel> toUpdate = tempSeats.where((s) => s.id > 0).toList();
-                              for (var seat in toUpdate) {
-                                await ApiService.updateSeatStatus(
-                                  seatId: seat.id,
-                                  status: seat.status,
-                                );
+                              for (var seat in tempSeats.where((s) => s.id > 0)) {
+                                await ApiService.updateSeatStatus(seatId: seat.id, status: seat.status);
                               }
 
                               await _fetchTables();
-                              _showSuccess('Table and seats updated');
+                              _showSuccess('Table updated');
                             } catch (e) {
-                              _showError('Failed to update: $e');
+                              _showError('Failed to update table');
                               await _fetchTables();
                             }
                           },
@@ -1486,24 +1139,13 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
       return;
     }
 
-    if (fetchedSeats.isEmpty) {
+    if (fetchedSeats == null || fetchedSeats.isEmpty) {
       _showError('No seats found for this table');
       return;
     }
 
-    bool hasZeroIds = fetchedSeats.any((s) => s.id == 0);
-    if (hasZeroIds) {
-      print('Warning: Some seats have zero IDs – they will be created on save');
-    }
-
     List<SeatModel> tempSeats = fetchedSeats
-        .map((s) => SeatModel(
-      id: s.id,
-      seatNo: s.seatNo,
-      status: s.status,
-      colorCode: s.colorCode,
-      tableId: s.tableId,
-    ))
+        .map((s) => SeatModel(id: s.id, seatNo: s.seatNo, status: s.status, colorCode: s.colorCode, tableId: s.tableId))
         .toList()
       ..sort((a, b) => a.seatNo.compareTo(b.seatNo));
 
@@ -1520,38 +1162,22 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'Edit Seats',
-                    style: TextStyle(
-                      color: AppConstants.textPrimary,
-                      fontSize: AppConstants.fontSizeXl,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Text('Edit Seats', style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeXl, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  Text(
-                    'Table ${table.number} • ${tempSeats.length} seats',
-                    style: TextStyle(
-                      color: AppConstants.textSecondary,
-                      fontSize: AppConstants.fontSizeSm,
-                    ),
-                  ),
+                  Text('Table ${table.number} • ${tempSeats.length} seats', style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeSm)),
                   const SizedBox(height: 16),
                   SizedBox(
                     height: 300,
                     child: ListView.separated(
                       itemCount: tempSeats.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 4),
-                      itemBuilder: (context, index) {
+                      itemBuilder: (context, idx) {
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                           decoration: BoxDecoration(
                             color: AppConstants.lightSurface,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: AppConstants.tealPrimary.withOpacity(0.2),
-                              width: AppConstants.borderThin,
-                            ),
+                            border: Border.all(color: AppConstants.tealPrimary.withOpacity(0.2), width: AppConstants.borderThin),
                           ),
                           child: Row(
                             children: [
@@ -1560,65 +1186,34 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                                 height: 36,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: tempSeats[index].status == 'Occupied'
+                                  color: tempSeats[idx].status == 'Occupied'
                                       ? AppConstants.successGreen
-                                      : tempSeats[index].status == 'Reserved'
+                                      : tempSeats[idx].status == 'Reserved'
                                       ? AppConstants.warningOrange
                                       : Colors.grey,
                                 ),
-                                child: Center(
-                                  child: Text(
-                                    '${tempSeats[index].seatNo}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: AppConstants.fontSizeSm,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
+                                child: Center(child: Text('${tempSeats[idx].seatNo}', style: const TextStyle(color: Colors.white, fontSize: AppConstants.fontSizeSm, fontWeight: FontWeight.bold))),
                               ),
                               const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  'Seat ${tempSeats[index].seatNo}',
-                                  style: TextStyle(
-                                    color: AppConstants.textPrimary,
-                                    fontSize: AppConstants.fontSizeSm,
-                                  ),
-                                ),
-                              ),
+                              Expanded(child: Text('Seat ${tempSeats[idx].seatNo}', style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeSm))),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8),
                                 decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: AppConstants.tealPrimary.withOpacity(0.3),
-                                    width: AppConstants.borderThin,
-                                  ),
+                                  border: Border.all(color: AppConstants.tealPrimary.withOpacity(0.3), width: AppConstants.borderThin),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<String>(
-                                    value: tempSeats[index].status,
+                                    value: tempSeats[idx].status,
                                     dropdownColor: AppConstants.lightSurface,
-                                    style: TextStyle(
-                                      color: AppConstants.textPrimary,
-                                      fontSize: AppConstants.fontSizeSm,
-                                    ),
-                                    icon: Icon(
-                                      Icons.arrow_drop_down,
-                                      color: AppConstants.tealPrimary,
-                                      size: 22,
-                                    ),
+                                    style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeSm),
+                                    icon: Icon(Icons.arrow_drop_down, color: AppConstants.tealPrimary, size: 22),
                                     items: const [
                                       DropdownMenuItem(value: 'Free', child: Text('Free')),
                                       DropdownMenuItem(value: 'Occupied', child: Text('Occupied')),
                                       DropdownMenuItem(value: 'Reserved', child: Text('Reserved')),
                                     ],
-                                    onChanged: (value) {
-                                      setState(() {
-                                        tempSeats[index].status = value!;
-                                      });
-                                    },
+                                    onChanged: (v) => setState(() => tempSeats[idx].status = v!),
                                   ),
                                 ),
                               ),
@@ -1631,58 +1226,28 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                   const SizedBox(height: 20),
                   Row(
                     children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(
-                            'Cancel',
-                            style: TextStyle(
-                              color: AppConstants.textSecondary,
-                              fontSize: AppConstants.fontSizeMd,
-                            ),
-                          ),
-                        ),
-                      ),
+                      Expanded(child: TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeMd)))),
                       const SizedBox(width: 8),
                       Expanded(
                         child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppConstants.tealPrimary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
+                          style: ElevatedButton.styleFrom(backgroundColor: AppConstants.tealPrimary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                           onPressed: () async {
                             Navigator.pop(context);
                             try {
                               for (var seat in tempSeats) {
                                 if (seat.id == 0) {
-                                  await ApiService.createSeat(
-                                    tableId: table.id,
-                                    seatNo: seat.seatNo,
-                                    status: seat.status,
-                                    colorCode: seat.colorCode,
-                                  );
+                                  await ApiService.createSeat(tableId: table.id, seatNo: seat.seatNo, status: seat.status, colorCode: seat.colorCode);
                                 } else {
-                                  await ApiService.updateSeatStatus(
-                                    seatId: seat.id,
-                                    status: seat.status,
-                                  );
+                                  await ApiService.updateSeatStatus(seatId: seat.id, status: seat.status);
                                 }
                               }
-
-                              int occupiedCount = tempSeats.where((s) => s.status == 'Occupied').length;
-                              setState(() {
-                                table.guests = occupiedCount;
-                                table.status = occupiedCount > 0 ? TableStatus.occupied : TableStatus.free;
-                              });
-
+                              int occCount = tempSeats.where((s) => s.status == 'Occupied').length;
+                              table.guests = occCount;
+                              table.status = occCount > 0 ? TableStatus.occupied : TableStatus.free;
                               await _fetchTables();
                               _showSuccess('Seats updated');
                             } catch (e) {
-                              _showError('Failed to update seats: $e');
+                              _showError('Failed to update seats');
                               await _fetchTables();
                             }
                           },

@@ -46,8 +46,11 @@ class PremiumAnalyticsChart extends StatelessWidget {
 
   Widget _buildStatsSummary() {
     double avgOccupancy = data.fold(0, (sum, item) => sum + (item['occupancy'] as int)) / data.length;
-    int peakHour = data.reduce((a, b) => (a['occupancy'] > b['occupancy'] ? a : b))['hour'];
-    int peakValue = data.reduce((a, b) => (a['occupancy'] > b['occupancy'] ? a : b))['occupancy'];
+    Map<String, dynamic> peakData = data.reduce((a, b) =>
+    (a['occupancy'] as int) > (b['occupancy'] as int) ? a : b
+    );
+    String peakHour = peakData['hour'] as String;
+    int peakValue = peakData['occupancy'] as int;
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -114,11 +117,10 @@ class ChartPainter extends CustomPainter {
     final double height = size.height;
     final double barWidth = width / data.length - 10;
 
-    final path = Path();
-
     for (int i = 0; i < data.length; i++) {
       final x = (i * (width / data.length)) + 10;
-      final y = height - (data[i]['occupancy'] / 100 * height * 0.8) - 20;
+      final int occupancyValue = data[i]['occupancy'] as int;
+      final y = height - (occupancyValue / 100 * height * 0.8) - 20;
 
       // Draw bar
       final barPath = Path();
@@ -144,7 +146,7 @@ class ChartPainter extends CustomPainter {
       );
 
       // Draw label
-      _drawLabel(canvas, data[i]['hour'], Offset(x + barWidth / 2, height - 10));
+      _drawLabel(canvas, data[i]['hour'] as String, Offset(x + barWidth / 2, height - 10));
     }
   }
 

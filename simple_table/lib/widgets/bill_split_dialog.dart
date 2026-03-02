@@ -37,15 +37,9 @@ class _BillSplitDialogState extends State<BillSplitDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Split Bill',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            const Text('Split Bill', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Text(
-              'Table ${widget.table.number} • ${widget.table.guests} Guests',
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
+            Text('Table ${widget.table.number} • ${widget.table.guests} Guests', style: TextStyle(color: Colors.grey.shade600)),
             const SizedBox(height: 16),
 
             if (bills.isNotEmpty)
@@ -57,71 +51,42 @@ class _BillSplitDialogState extends State<BillSplitDialog> {
                   itemBuilder: (context, index) {
                     final bill = bills[index];
                     return ListTile(
-                      leading: CircleAvatar(
-                        radius: 16,
-                        child: Text('${index + 1}'),
-                      ),
+                      leading: CircleAvatar(radius: 16, child: Text('${index + 1}')),
                       title: Text(bill.familyName),
                       subtitle: Text('${bill.guests} guests'),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () {
-                          setState(() {
-                            remainingGuests += bill.guests;
-                            bills.removeAt(index);
-                          });
-                        },
+                        onPressed: () => setState(() { remainingGuests += bill.guests; bills.removeAt(index); }),
                       ),
                     );
                   },
                 ),
               ),
 
-            if (remainingGuests > 0)
-              _buildAddBillSection(),
+            if (remainingGuests > 0) _buildAddBillSection(),
 
             const SizedBox(height: 16),
-
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
+              decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Remaining Guests:'),
-                  Text(
-                    '$remainingGuests',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: remainingGuests == 0 ? Colors.green : Colors.orange,
-                    ),
-                  ),
+                  Text('$remainingGuests', style: TextStyle(fontWeight: FontWeight.bold, color: remainingGuests == 0 ? Colors.green : Colors.orange)),
                 ],
               ),
             ),
-
             const SizedBox(height: 16),
 
             Row(
               children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
-                  ),
-                ),
+                Expanded(child: TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel'))),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: remainingGuests == 0 && bills.isNotEmpty
-                        ? () => widget.onBillsCreated(bills)
-                        : null,
-                    child: const Text('Create Bills'),
-                  ),
-                ),
+                Expanded(child: ElevatedButton(
+                  onPressed: remainingGuests == 0 && bills.isNotEmpty ? () => widget.onBillsCreated(bills) : null,
+                  child: const Text('Create Bills'),
+                )),
               ],
             ),
           ],
@@ -131,7 +96,7 @@ class _BillSplitDialogState extends State<BillSplitDialog> {
   }
 
   Widget _buildAddBillSection() {
-    final TextEditingController nameController = TextEditingController();
+    final nameController = TextEditingController();
     int selectedGuests = 1;
 
     return StatefulBuilder(
@@ -139,37 +104,21 @@ class _BillSplitDialogState extends State<BillSplitDialog> {
         return Container(
           margin: const EdgeInsets.only(top: 8),
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(8),
-          ),
+          decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8)),
           child: Column(
             children: [
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Family/Group Name',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Family/Group Name', border: OutlineInputBorder()),
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
                   const Text('Guests:'),
                   const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.remove, color: Colors.red),
-                    onPressed: selectedGuests > 1
-                        ? () => setState(() => selectedGuests--)
-                        : null,
-                  ),
+                  IconButton(icon: const Icon(Icons.remove, color: Colors.red), onPressed: selectedGuests > 1 ? () => setState(() => selectedGuests--) : null),
                   Text('$selectedGuests'),
-                  IconButton(
-                    icon: const Icon(Icons.add, color: Colors.green),
-                    onPressed: selectedGuests < remainingGuests
-                        ? () => setState(() => selectedGuests++)
-                        : null,
-                  ),
+                  IconButton(icon: const Icon(Icons.add, color: Colors.green), onPressed: selectedGuests < remainingGuests ? () => setState(() => selectedGuests++) : null),
                   const Spacer(),
                   ElevatedButton(
                     onPressed: nameController.text.isNotEmpty

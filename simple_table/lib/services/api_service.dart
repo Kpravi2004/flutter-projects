@@ -3,17 +3,13 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/table_model.dart';
 import '../models/seat_model.dart';
+import '../models/waiter_model.dart';
 
 class ApiService {
-  // Base URL – adjust based on your environment
-  // Android emulator: 10.0.2.2
-  // iOS simulator: localhost
-  // Real device: your computer's local IP
-  static const String baseUrl = 'http://localhost:8080';
+  static const String baseUrl = 'http://localhost:8080'; // adjust for emulator/device
 
   // ==================== TABLES ====================
 
-  /// Fetch all tables with their seats
   static Future<List<TableModel>> fetchTables() async {
     final url = Uri.parse('$baseUrl/tables');
     print('GET $url');
@@ -34,15 +30,14 @@ class ApiService {
     }
   }
 
-  /// Create a new table (table only, seats will be added separately)
   static Future<TableModel> createTable(Map<String, dynamic> tableData) async {
     final url = Uri.parse('$baseUrl/tables');
     final payload = {
-      'table_number': int.tryParse(tableData['table_number'].toString()) ?? 0,
-      'table_name': tableData['table_name'].toString(),
-      'total_seats': tableData['total_seats'] as int,
-      'status': tableData['status'].toString(),
-      'floor_name': tableData['floor_name'].toString(),
+      'table_number': tableData['table_number'] ?? 0,
+      'table_name': tableData['table_name'] ?? '',
+      'total_seats': tableData['total_seats'] ?? 0,
+      'status': tableData['status'] ?? 'Active',
+      'floor_name': tableData['floor_name'] ?? 'Main Floor',
     };
     print('POST $url with payload: $payload');
     try {
@@ -56,7 +51,7 @@ class ApiService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return TableModel.fromJson(json.decode(response.body));
       } else {
-        throw Exception('Failed to create table: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to create table: ${response.statusCode}');
       }
     } on TimeoutException catch (_) {
       throw Exception('Request timeout');
@@ -66,16 +61,9 @@ class ApiService {
     }
   }
 
-  /// Update a table (basic fields only, does NOT update seats)
   static Future<void> updateTable(TableModel table) async {
     final url = Uri.parse('$baseUrl/tables/${table.id}');
-    final payload = {
-      'table_number': int.tryParse(table.number) ?? table.number,
-      'table_name': table.name,
-      'total_seats': table.maxGuests,
-      'status': table.status == TableStatus.free ? 'Active' : 'Inactive',
-      'floor_name': table.floor,
-    };
+    final payload = table.toJson();
     print('PUT $url with payload: $payload');
     try {
       final response = await http.put(
@@ -96,7 +84,6 @@ class ApiService {
     }
   }
 
-  /// Delete a table by ID
   static Future<void> deleteTable(int id) async {
     final url = Uri.parse('$baseUrl/tables/$id');
     print('DELETE $url');
@@ -116,7 +103,6 @@ class ApiService {
 
   // ==================== SEATS ====================
 
-  /// Create a single seat for a specific table
   static Future<SeatModel> createSeat({
     required int tableId,
     required int seatNo,
@@ -138,7 +124,7 @@ class ApiService {
       ).timeout(const Duration(seconds: 10));
       print('Response status: ${response.statusCode}');
       print('Response body: ${response.body}');
-      if (response.statusCode == 201) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         return SeatModel.fromJson(json.decode(response.body));
       } else {
         throw Exception('Failed to create seat: ${response.statusCode}');
@@ -151,7 +137,6 @@ class ApiService {
     }
   }
 
-  /// Update a seat's status using the dedicated endpoint
   static Future<SeatModel> updateSeatStatus({
     required int seatId,
     required String status,
@@ -175,7 +160,40 @@ class ApiService {
     }
   }
 
-  /// Get all seats for a table
+  static Future<SeatModel> updateSeat({
+    required int seatId,
+    required int seatNo,
+    required String status,
+    String colorCode = 'White',
+  }) async {
+    final url = Uri.parse('$baseUrl/seats/$seatId');
+    final payload = {
+      'seat_no': seatNo,
+      'status': status,
+      'color_code': colorCode,
+    };
+    print('PUT $url with payload: $payload');
+    try {
+      final response = await http.put(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(payload),
+      ).timeout(const Duration(seconds: 10));
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      if (response.statusCode == 200) {
+        return SeatModel.fromJson(json.decode(response.body));
+      } else {
+        throw Exception('Failed to update seat: ${response.statusCode}');
+      }
+    } on TimeoutException catch (_) {
+      throw Exception('Request timeout');
+    } catch (e) {
+      print('Network error updating seat: $e');
+      rethrow;
+    }
+  }
+
   static Future<List<SeatModel>> getSeatsByTable(int tableId) async {
     final url = Uri.parse('$baseUrl/seats/table/$tableId');
     print('GET $url');
@@ -196,7 +214,6 @@ class ApiService {
     }
   }
 
-  /// Delete a seat
   static Future<void> deleteSeat(int seatId) async {
     final url = Uri.parse('$baseUrl/seats/$seatId');
     print('DELETE $url');
@@ -210,6 +227,55 @@ class ApiService {
       throw Exception('Request timeout');
     } catch (e) {
       print('Network error deleting seat: $e');
+      rethrow;
+    }
+  }
+
+  // ==================== WAITERS ====================
+
+  static Future<List<WaiterModel>> fetchWaiters() async {
+    final url = Uri.parse('$baseUrl/waiters');
+    print('GET $url');
+    try {
+      final response = await http.get(url).timeout(const Duration(seconds: 10));
+      print('Response status: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((json) => WaiterModel.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load waiters: ${response.statusCode}');
+      }
+    } on TimeoutException catch (_) {
+      throw Exception('Request timeout');
+    } catch (e) {
+      print('Network error fetching waiters: $e');
+      rethrow;
+    }
+  }
+
+  static Future<WaiterModel> createWaiter(String name) async {
+    final url = Uri.parse('$baseUrl/waiters');
+    final payload = {
+      'waiterName': name,
+    };
+    print('POST $url with payload: $payload');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(payload),
+      ).timeout(const Duration(seconds: 10));
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return WaiterModel.fromJson(json.decode(response.body));
+      } else {
+        throw Exception('Failed to create waiter: ${response.statusCode}');
+      }
+    } on TimeoutException catch (_) {
+      throw Exception('Request timeout');
+    } catch (e) {
+      print('Network error creating waiter: $e');
       rethrow;
     }
   }

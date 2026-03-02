@@ -21,7 +21,7 @@ class TableModel {
   int guests;              // derived from seats
   int maxGuests;           // total_seats
   double amount;
-  String? waiterId;
+  int? waiterId;           // integer ID from waiter
   String? waiterName;
   String? cleaningTime;
   String? reservedTime;
@@ -48,67 +48,68 @@ class TableModel {
     required this.seats,
   });
 
-  // =========================
-  // ✅ JSON → Model
-  // =========================
   factory TableModel.fromJson(Map<String, dynamic> json) {
-
-    int parseInt(dynamic value) {
+    int parseId(dynamic value) {
       if (value == null) return 0;
       if (value is int) return value;
       if (value is String) return int.tryParse(value) ?? 0;
       return 0;
     }
 
-    final int id = parseInt(json['tableId']);
-
-    final String number =
-        json['table_number']?.toString() ?? '';
-
-    final String name =
-        json['table_name']?.toString() ?? '';
-
-    final int maxGuests =
-    parseInt(json['total_seats']);
-
-    final String floor =
-        json['floor_name']?.toString().trim() ?? 'Main Floor';
+    int id = parseId(json['tableId']);
+    int maxGuests = parseId(json['total_seats']);
+    String number = json['table_number']?.toString() ?? '';
+    String name = json['table_name']?.toString() ?? '';
+    String floor = json['floor_name']?.toString().trim() ?? 'Main Floor';
+    String statusStr = json['status']?.toString() ?? 'free';
 
     List<SeatModel> seats = [];
-
     if (json['seats'] != null && json['seats'] is List) {
       seats = (json['seats'] as List)
           .map((s) {
-        final seatJson = s as Map<String, dynamic>;
-        seatJson['tableId'] = id;   // inject parent id
-        return SeatModel.fromJson(seatJson);
+        (s as Map<String, dynamic>)['tableId'] = id;
+        return SeatModel.fromJson(s);
       })
           .toList();
     }
-
-    final int guests =
-        seats.where((s) => s.status == 'Occupied').length;
+    int guests = seats.where((s) => s.status == 'Occupied').length;
 
     return TableModel(
       id: id,
       number: number,
       name: name,
-      status: _parseStatus(json['status']?.toString() ?? 'free'),
+      status: _parseStatus(statusStr),
       guests: guests,
       maxGuests: maxGuests,
       amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
       floor: floor,
       seats: seats,
+      waiterId: json['waiterId'] as int?,
+      waiterName: json['waiterName'] as String?,
     );
   }
 
-  // =========================
-  // ✅ Model → JSON
-  // =========================
+  static TableStatus _parseStatus(String status) {
+    switch (status.toLowerCase().trim()) {
+      case 'active':
+      case 'free':
+        return TableStatus.free;
+      case 'occupied':
+        return TableStatus.occupied;
+      case 'reserved':
+        return TableStatus.reserved;
+      case 'cleaning':
+      case 'inactive':
+        return TableStatus.cleaning;
+      case 'billed':
+        return TableStatus.billed;
+      default:
+        return TableStatus.free;
+    }
+  }
+
   Map<String, dynamic> toJson() {
-
     String backendStatus;
-
     switch (status) {
       case TableStatus.free:
         backendStatus = 'Active';
@@ -126,50 +127,19 @@ class TableModel {
         backendStatus = 'Billed';
         break;
     }
-
     return {
       'tableId': id,
-      'table_number': int.tryParse(number),
+      'table_number': int.tryParse(number) ?? number,
       'table_name': name,
       'total_seats': maxGuests,
       'status': backendStatus,
       'floor_name': floor,
+      'waiterId': waiterId,
+      'waiterName': waiterName,
       'seats': seats.map((s) => s.toJson()).toList(),
     };
   }
 
-  // =========================
-  // ✅ Status Mapping
-  // =========================
-  static TableStatus _parseStatus(String status) {
-
-    switch (status.toLowerCase().trim()) {
-
-      case 'active':
-      case 'free':
-        return TableStatus.free;
-
-      case 'occupied':
-        return TableStatus.occupied;
-
-      case 'reserved':
-        return TableStatus.reserved;
-
-      case 'cleaning':
-      case 'inactive':
-        return TableStatus.cleaning;
-
-      case 'billed':
-        return TableStatus.billed;
-
-      default:
-        return TableStatus.free;
-    }
-  }
-
-  // =========================
-  // ✅ Seat Sync Logic
-  // =========================
   void updateSeatsFromGuestCount() {
     for (int i = 0; i < seats.length; i++) {
       seats[i].status = (i < guests) ? 'Occupied' : 'Free';

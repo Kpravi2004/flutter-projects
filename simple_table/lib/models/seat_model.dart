@@ -14,7 +14,6 @@ class SeatModel {
   });
 
   factory SeatModel.fromJson(Map<String, dynamic> json) {
-    // Safe integer parsing
     int parseId(dynamic value) {
       if (value == null) return 0;
       if (value is int) return value;
@@ -24,9 +23,9 @@ class SeatModel {
 
     return SeatModel(
       id: parseId(json['seatId']),
-      seatNo: parseId(json['seatNo']),
+      seatNo: parseId(json['seat_no']),
       status: json['status'] as String? ?? 'Free',
-      colorCode: json['colorCode'] as String? ?? 'White',
+      colorCode: json['color_code'] as String? ?? 'White',
       tableId: parseId(json['tableId']),
     );
   }
@@ -34,9 +33,9 @@ class SeatModel {
   Map<String, dynamic> toJson() {
     return {
       'seatId': id,
-      'seatNo': seatNo,
+      'seat_no': seatNo,
       'status': status,
-      'colorCode': colorCode,
+      'color_code': colorCode,
       'tableId': tableId,
     };
   }

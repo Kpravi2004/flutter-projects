@@ -611,8 +611,23 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
   void _showAddWaiterDialog() {
     showDialog(
       context: context,
-      builder: (context) => AddWaiterDialog(
-        onWaiterAdded: (newWaiter) => setState(() => waiters.add(newWaiter)),
+      builder: (dialogContext) => AddWaiterDialog(
+        onWaiterAdded: (newWaiter) async {
+          // Close the AddWaiterDialog
+          Navigator.of(dialogContext).pop();
+          try {
+            // Send only the name to the backend
+            WaiterModel created = await ApiService.createWaiter(newWaiter.name);
+            if (!mounted) return;
+            setState(() {
+              waiters.add(created);
+            });
+            _showSuccess('Waiter ${created.name} added');
+          } catch (e) {
+            if (!mounted) return;
+            _showError('Failed to add waiter: $e');
+          }
+        },
       ),
     );
   }
@@ -633,12 +648,11 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
         waiters: waiters,
         onWaiterSelected: (waiter) {
           setState(() {
-            table.waiterId = waiter.id;
+            table.waiterId = waiter.id;        // ← use int, not toString()
             table.waiterName = waiter.name;
           });
           Navigator.pop(context);
           _showGuestSelectionDialog(table);
-          ApiService.updateTable(table);
         },
         onAddWaiter: () {
           Navigator.pop(context);

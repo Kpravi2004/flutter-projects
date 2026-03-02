@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
-import '../models/service_model.dart';
 
-class ServiceCard extends StatelessWidget {
+class CategoryCard extends StatelessWidget {
 
-  final ServiceModel service;
+  final String title;
+  final String image;
   final VoidCallback onTap;
 
-  const ServiceCard({
+  const CategoryCard({
     super.key,
-    required this.service,
+    required this.title,
+    required this.image,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+
+    final width = MediaQuery.of(context).size.width;
 
     return GestureDetector(
       onTap: onTap,
@@ -21,28 +24,18 @@ class ServiceCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           image: DecorationImage(
-            image: AssetImage(service.image),
+            image: AssetImage(image),
             fit: BoxFit.cover,
           ),
         ),
         alignment: Alignment.bottomLeft,
-        padding: const EdgeInsets.all(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 4
-          ),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            service.title,
-            style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold
-            ),
-          ),
+        padding: EdgeInsets.all(width * 0.03),
+        child: Text(
+          title,
+          style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16),
         ),
       ),
     );

@@ -32,7 +32,6 @@ class WaiterSelectionDialog extends StatelessWidget {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-
             waiters.isEmpty
                 ? const Text('No waiters available')
                 : Container(
@@ -48,13 +47,11 @@ class WaiterSelectionDialog extends StatelessWidget {
                       child: Text(waiter.name[0]),
                     ),
                     title: Text(waiter.name),
-                    subtitle: Text('Code: ${waiter.code}'),
                     onTap: () => onWaiterSelected(waiter),
                   );
                 },
               ),
             ),
-
             const SizedBox(height: 16),
             TextButton(
               onPressed: onAddWaiter,

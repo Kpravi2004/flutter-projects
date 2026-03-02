@@ -1,0 +1,17 @@
+name: your_project_name
+description: A new Flutter project
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/

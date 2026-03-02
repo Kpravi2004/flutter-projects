@@ -1,13 +1,24 @@
 class WaiterModel {
-  final String id;
+  final int id;
   String name;
-  String code;
   bool isActive;
 
   WaiterModel({
     required this.id,
     required this.name,
-    required this.code,
     this.isActive = true,
   });
+
+  factory WaiterModel.fromJson(Map<String, dynamic> json) {
+    return WaiterModel(
+      id: json['waiterId'] as int? ?? 0,
+      name: json['waiterName'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'waiterName': name,
+    };
+  }
 }

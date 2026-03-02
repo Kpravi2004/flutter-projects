@@ -64,7 +64,7 @@ class _MacroServicePageState
                             topRight: Radius.circular(14),
                           ),
                           child: Image.asset(
-                            service["image"],
+                            service["image"]!,
                             height: 150,
                             width: double.infinity,
                             fit: BoxFit.cover,
@@ -80,7 +80,7 @@ class _MacroServicePageState
                                 .spaceBetween,
                             children: [
                               Text(
-                                service["title"],
+                                service["title"]!,
                                 style: const TextStyle(
                                     fontWeight:
                                     FontWeight.bold),
@@ -121,7 +121,7 @@ class _MacroServicePageState
                         BookingDetailsPage(
                           serviceName:
                           services[selectedIndex]
-                          ["title"],
+                          ["title"]!,
                         ),
                   ),
                 );

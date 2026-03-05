@@ -13,7 +13,7 @@ import '../utils/helpers.dart';
 import '../widgets/seat_selection_dialog.dart';
 import '../services/api_service.dart';
 import '../models/seat_model.dart';
-
+import 'bill_seat_selection_screen.dart';
 class MobileTableScreen extends StatefulWidget {
   const MobileTableScreen({Key? key}) : super(key: key);
 
@@ -461,6 +461,8 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
   // -------------------- DIALOGS --------------------
 
   void _showTableOptions(TableModel table) {
+    int freeSeats = table.maxGuests - table.guests;
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -476,74 +478,150 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(color: _getStatusColor(table.status).withOpacity(0.2), shape: BoxShape.circle),
-                    child: Icon(Icons.table_restaurant, color: _getStatusColor(table.status), size: 28),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(table.status).withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.table_restaurant,
+                      color: _getStatusColor(table.status),
+                      size: 28,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Table ${table.number}', style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeLg, fontWeight: FontWeight.bold)),
-                        Text('${table.maxGuests} seats • ${table.floor}', style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeSm)),
+                        Text(
+                          'Table ${table.number}',
+                          style: TextStyle(
+                            color: AppConstants.textPrimary,
+                            fontSize: AppConstants.fontSizeLg,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '${table.maxGuests} seats • ${table.floor}',
+                          style: TextStyle(
+                            color: AppConstants.textSecondary,
+                            fontSize: AppConstants.fontSizeSm,
+                          ),
+                        ),
+                        if (table.status == TableStatus.occupied)
+                          Text(
+                            '${table.guests} occupied, $freeSeats free',
+                            style: TextStyle(
+                              color: freeSeats > 0 ? AppConstants.successGreen : Colors.grey,
+                              fontSize: AppConstants.fontSizeSm,
+                            ),
+                          ),
                       ],
                     ),
                   ),
-                  IconButton(icon: Icon(Icons.close, color: AppConstants.textSecondary), onPressed: () => Navigator.pop(context)),
+                  IconButton(
+                    icon: Icon(Icons.close, color: AppConstants.textSecondary),
+                    onPressed: () => Navigator.pop(context),
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
+
+              // Actions for FREE table
               if (table.status == TableStatus.free) ...[
-                _buildActionTile(Icons.person_add, 'Assign Waiter', AppConstants.tealPrimary, () {
-                  Navigator.pop(context);
-                  _showWaiterSelectionDialog(table);
-                }),
-              ] else ...[
-                _buildActionTile(Icons.restaurant_menu, 'Add Bill', AppConstants.successGreen, () {
-                  Navigator.pop(context);
-                  _showBillEntryDialog(table);
-                }),
-                _buildActionTile(Icons.edit, 'Edit Table', AppConstants.tealPrimary, () {
-                  Navigator.pop(context);
-                  _showEditTableDialog(table);
-                }),
-                _buildActionTile(Icons.event_seat, 'Edit Seats', AppConstants.coralAccent, () {
-                  Navigator.pop(context);
-                  _showEditSeatsDialog(table);
-                }),
-                _buildActionTile(Icons.person, 'Change Waiter', AppConstants.goldAccent, () {
-                  Navigator.pop(context);
-                  _showWaiterSelectionDialog(table);
-                }),
-                _buildActionTile(Icons.receipt, 'Split Bill', AppConstants.billedPurple, () {
-                  Navigator.pop(context);
-                  _showBillSplitDialog(table);
-                }),
-                _buildActionTile(Icons.payment, 'Settle', AppConstants.errorRed, () {
-                  _settleBill(table);
-                  Navigator.pop(context);
-                }),
+                _buildActionTile(
+                  Icons.person_add,
+                  'Assign Waiter',
+                  AppConstants.tealPrimary,
+                      () {
+                    Navigator.pop(context);
+                    _showWaiterSelectionDialog(table);
+                  },
+                ),
+                _buildActionTile(
+                  Icons.edit,
+                  'Edit Table',
+                  AppConstants.tealPrimary,
+                      () {
+                    Navigator.pop(context);
+                    _showEditTableDialog(table);
+                  },
+                ),
+                _buildActionTile(
+                  Icons.event_seat,
+                  'Edit Seats',
+                  AppConstants.coralAccent,
+                      () {
+                    Navigator.pop(context);
+                    _showEditSeatsDialog(table);
+                  },
+                ),
+                _buildActionTile(
+                  Icons.delete,
+                  'Delete Table',
+                  AppConstants.errorRed,
+                      () async {
+                    Navigator.pop(context);
+                    try {
+                      await ApiService.deleteTable(table.id);
+                      setState(() => tables.remove(table));
+                      _showSuccess('Table deleted');
+                    } catch (e) {
+                      _showError('Failed to delete table');
+                    }
+                  },
+                ),
               ],
-              if (table.status == TableStatus.free) ...[
-                _buildActionTile(Icons.edit, 'Edit Table', AppConstants.tealPrimary, () {
-                  Navigator.pop(context);
-                  _showEditTableDialog(table);
-                }),
-                _buildActionTile(Icons.event_seat, 'Edit Seats', AppConstants.coralAccent, () {
-                  Navigator.pop(context);
-                  _showEditSeatsDialog(table);
-                }),
+
+              // Actions for OCCUPIED table
+              if (table.status == TableStatus.occupied) ...[
+                _buildActionTile(
+                  Icons.restaurant_menu,
+                  'Add Bill',
+                  AppConstants.successGreen,
+                      () {
+                    Navigator.pop(context);
+                    _showBillEntryDialog(table);
+                  },
+                ),
+                _buildActionTile(
+                  Icons.person,
+                  'Change Waiter',
+                  AppConstants.tealPrimary,
+                      () {
+                    Navigator.pop(context);
+                    _showWaiterSelectionDialog(table);
+                  },
+                ),
+                if (freeSeats > 0)
+                  _buildActionTile(
+                    Icons.group_add,
+                    'Add Guests',
+                    AppConstants.coralAccent,
+                        () {
+                      Navigator.pop(context);
+                      _showAddGuestsDialog(table);
+                    },
+                  ),
+                _buildActionTile(
+                  Icons.edit,
+                  'Edit Table',
+                  AppConstants.tealPrimary,
+                      () {
+                    Navigator.pop(context);
+                    _showEditTableDialog(table);
+                  },
+                ),
+                _buildActionTile(
+                  Icons.event_seat,
+                  'Edit Seats',
+                  AppConstants.coralAccent,
+                      () {
+                    Navigator.pop(context);
+                    _showEditSeatsDialog(table);
+                  },
+                ),
               ],
-              _buildActionTile(Icons.delete, 'Delete Table', AppConstants.errorRed, () async {
-                Navigator.pop(context);
-                try {
-                  await ApiService.deleteTable(table.id);
-                  setState(() => tables.remove(table));
-                  _showSuccess('Table deleted');
-                } catch (e) {
-                  _showError('Failed to delete table');
-                }
-              }),
             ],
           ),
         ),
@@ -822,36 +900,17 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
   }
 
   void _showBillEntryDialog(TableModel table) {
-    TextEditingController amount = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppConstants.lightSurface,
-        title: const Text('Add Bill', style: TextStyle(color: AppConstants.textPrimary)),
-        content: TextField(
-          controller: amount,
-          keyboardType: TextInputType.number,
-          style: const TextStyle(color: AppConstants.textPrimary),
-          decoration: InputDecoration(
-            labelText: 'Amount',
-            labelStyle: TextStyle(color: AppConstants.tealPrimary),
-            border: OutlineInputBorder(),
-            prefixText: '₹ ',
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: TextStyle(color: AppConstants.textSecondary))),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppConstants.tealPrimary, foregroundColor: Colors.white),
-            onPressed: () {
-              if (amount.text.isNotEmpty) {
-                setState(() => table.amount = double.parse(amount.text));
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
+      builder: (context) => SelectSeatsDialog(
+        onConfirm: (seatIds) async {
+          // Navigate to your product selection screen with the seat IDs
+          Navigator.pushNamed(
+            context,
+            '/product-selection',  // adjust this route to your actual product screen
+            arguments: seatIds,
+          );
+        },
       ),
     );
   }

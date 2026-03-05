@@ -279,4 +279,37 @@ class ApiService {
       rethrow;
     }
   }
+
+  static Future<Map<String, dynamic>> createBill({
+    required List<int> seatIds,
+    required List<Map<String, dynamic>> items,
+    required double total,
+  }) async {
+    final url = Uri.parse('$baseUrl/bills');
+    final payload = {
+      'seatIds': seatIds,
+      'items': items,
+      'total': total,
+    };
+    print('POST $url with payload: $payload');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(payload),
+      ).timeout(const Duration(seconds: 10));
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      if (response.statusCode == 201) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to create bill: ${response.statusCode}');
+      }
+    } on TimeoutException catch (_) {
+      throw Exception('Request timeout');
+    } catch (e) {
+      print('Network error creating bill: $e');
+      rethrow;
+    }
+  }
 }

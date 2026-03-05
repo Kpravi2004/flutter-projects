@@ -4,6 +4,7 @@ class SeatModel {
   String status;
   final String colorCode;
   final int tableId;
+  bool billingStatus;
 
   SeatModel({
     required this.id,
@@ -11,6 +12,7 @@ class SeatModel {
     required this.status,
     required this.colorCode,
     required this.tableId,
+    this.billingStatus = false,
   });
 
   factory SeatModel.fromJson(Map<String, dynamic> json) {
@@ -27,6 +29,7 @@ class SeatModel {
       status: json['status'] as String? ?? 'Free',
       colorCode: json['color_code'] as String? ?? 'White',
       tableId: parseId(json['tableId']),
+      billingStatus: json['billing_status'] as bool? ?? false,
     );
   }
 
@@ -37,6 +40,7 @@ class SeatModel {
       'status': status,
       'color_code': colorCode,
       'tableId': tableId,
+      'billing_status': billingStatus,
     };
   }
 }

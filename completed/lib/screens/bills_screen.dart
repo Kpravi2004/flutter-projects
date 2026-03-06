@@ -22,7 +22,6 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
   // Search and filter
   String _searchQuery = '';
   DateTimeRange? _selectedDateRange;
-
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -58,16 +57,13 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
   }
 
   void _applyFilters() {
-    // Filter completed bills by date range and search query
     _filteredCompletedBills = _completedBills.where((bill) {
-      // Date range filter
       if (_selectedDateRange != null) {
         DateTime billDate = DateTime.parse(bill['dateTime']);
         if (billDate.isBefore(_selectedDateRange!.start) || billDate.isAfter(_selectedDateRange!.end)) {
           return false;
         }
       }
-      // Search query filter (by bill ID or item name)
       if (_searchQuery.isNotEmpty) {
         bool idMatch = bill['id'].toString().contains(_searchQuery);
         bool itemMatch = (bill['items'] as List).any((item) =>
@@ -114,36 +110,65 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
   }
 
   Future<void> _confirmBill(Map<String, dynamic> bill) async {
-    // Show confirmation dialog
+    String? selectedPaymentMethod = 'Cash'; // default
     bool? confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Bill'),
-        content: Text('Are you sure you want to mark bill #${bill['id']} as completed?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.successGreen,
-              foregroundColor: Colors.white,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Confirm Bill'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Are you sure you want to mark bill #${bill['id']} as completed?'),
+                const SizedBox(height: 16),
+                const Text('Payment Method:'),
+                const SizedBox(height: 4),
+                DropdownButtonFormField<String>(
+                  value: selectedPaymentMethod,
+                  items: const [
+                    DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+                    DropdownMenuItem(value: 'Card', child: Text('Card')),
+                    DropdownMenuItem(value: 'UPI', child: Text('UPI')),
+                    DropdownMenuItem(value: 'Other', child: Text('Other')),
+                  ],
+                  onChanged: (value) {
+                    selectedPaymentMethod = value;
+                  },
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+              ],
             ),
-            child: const Text('Confirm'),
-          ),
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppConstants.successGreen,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Confirm'),
+              ),
+            ],
+          );
+        },
       ),
     );
 
     if (confirm == true) {
       try {
-        await ApiService.confirmBill(bill['id']);
+        await ApiService.confirmBill(bill['id'], paymentMethod: selectedPaymentMethod);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Bill confirmed'), backgroundColor: AppConstants.successGreen),
         );
-        _fetchBills(); // refresh lists
+        _fetchBills();
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to confirm bill: $e'), backgroundColor: AppConstants.errorRed),
@@ -162,12 +187,16 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppConstants.lightBackground,
+      backgroundColor: const Color(0xFFF8F5F0), // parchment-like background
       appBar: AppBar(
-        title: const Text('Bills'),
-        backgroundColor: AppConstants.tealPrimary,
+        title: const Text('Bills', style: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.w400)),
+        backgroundColor: const Color(0xFF2C3E50), // dark blue-gray
+        elevation: 0,
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
           tabs: const [
             Tab(text: 'Pending'),
             Tab(text: 'Completed'),
@@ -179,9 +208,7 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
           : TabBarView(
         controller: _tabController,
         children: [
-          // Pending bills tab
           _buildPendingTab(),
-          // Completed bills tab with filters
           _buildCompletedTab(),
         ],
       ),
@@ -193,7 +220,7 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
       return Center(
         child: Text(
           'No pending bills',
-          style: TextStyle(color: AppConstants.textSecondary, fontSize: 16),
+          style: TextStyle(color: AppConstants.textSecondary, fontSize: 16, fontStyle: FontStyle.italic),
         ),
       );
     }
@@ -201,11 +228,11 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
       onRefresh: _fetchBills,
       color: AppConstants.tealPrimary,
       child: ListView.builder(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(12),
         itemCount: _pendingBills.length,
         itemBuilder: (context, index) {
           final bill = _pendingBills[index];
-          return _buildBillCard(bill, isPending: true);
+          return _buildClassicBillCard(bill, isPending: true);
         },
       ),
     );
@@ -214,19 +241,18 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
   Widget _buildCompletedTab() {
     return Column(
       children: [
-        // Filter bar
         Container(
-          padding: const EdgeInsets.all(8),
-          color: AppConstants.lightSurface,
+          padding: const EdgeInsets.all(12),
+          color: const Color(0xFFF8F5F0),
           child: Row(
             children: [
-              // Search field
               Expanded(
                 child: Container(
                   height: 40,
                   decoration: BoxDecoration(
-                    border: Border.all(color: AppConstants.tealPrimary.withOpacity(0.3)),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
                   ),
                   child: TextField(
                     controller: _searchController,
@@ -237,9 +263,9 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
                       });
                     },
                     decoration: InputDecoration(
-                      hintText: 'Search by bill # or item...',
-                      hintStyle: TextStyle(color: AppConstants.textHint, fontSize: 12),
-                      prefixIcon: Icon(Icons.search, color: AppConstants.tealPrimary, size: 18),
+                      hintText: 'Search bills...',
+                      hintStyle: TextStyle(color: Colors.grey.shade500),
+                      prefixIcon: Icon(Icons.search, color: AppConstants.tealPrimary, size: 20),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(vertical: 8),
                     ),
@@ -247,26 +273,22 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
                 ),
               ),
               const SizedBox(width: 8),
-              // Date range picker button
               OutlinedButton.icon(
                 onPressed: _selectDateRange,
-                icon: Icon(Icons.date_range, size: 18),
+                icon: Icon(Icons.date_range, size: 18, color: AppConstants.tealPrimary),
                 label: Text(
-                  _selectedDateRange == null
-                      ? 'Select Dates'
-                      : '${DateFormat('dd/MM/yy').format(_selectedDateRange!.start)} - ${DateFormat('dd/MM/yy').format(_selectedDateRange!.end)}',
-                  style: const TextStyle(fontSize: 12),
+                  _selectedDateRange == null ? 'Filter Dates' : '${DateFormat('dd/MM/yy').format(_selectedDateRange!.start)} - ${DateFormat('dd/MM/yy').format(_selectedDateRange!.end)}',
+                  style: TextStyle(color: AppConstants.tealPrimary, fontSize: 12),
                 ),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppConstants.tealPrimary,
-                  side: BorderSide(color: AppConstants.tealPrimary.withOpacity(0.5)),
+                  side: BorderSide(color: AppConstants.tealPrimary),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
               if (_selectedDateRange != null) ...[
                 const SizedBox(width: 4),
                 IconButton(
-                  icon: Icon(Icons.clear, color: AppConstants.errorRed, size: 18),
+                  icon: Icon(Icons.clear, color: Colors.red, size: 20),
                   onPressed: _clearDateRange,
                 ),
               ],
@@ -277,19 +299,19 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
           child: _filteredCompletedBills.isEmpty
               ? Center(
             child: Text(
-              'No completed bills match your filters',
-              style: TextStyle(color: AppConstants.textSecondary, fontSize: 16),
+              'No completed bills match',
+              style: TextStyle(color: AppConstants.textSecondary, fontSize: 16, fontStyle: FontStyle.italic),
             ),
           )
               : RefreshIndicator(
             onRefresh: _fetchBills,
             color: AppConstants.tealPrimary,
             child: ListView.builder(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(12),
               itemCount: _filteredCompletedBills.length,
               itemBuilder: (context, index) {
                 final bill = _filteredCompletedBills[index];
-                return _buildBillCard(bill, isPending: false);
+                return _buildClassicBillCard(bill, isPending: false);
               },
             ),
           ),
@@ -298,32 +320,38 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildBillCard(Map<String, dynamic> bill, {required bool isPending}) {
+  Widget _buildClassicBillCard(Map<String, dynamic> bill, {required bool isPending}) {
     final dateTime = DateTime.parse(bill['dateTime']);
     final items = List<Map<String, dynamic>>.from(bill['items']);
     final itemCount = items.length;
     final total = bill['totalAmount'];
+    final tableNumbers = bill['tableNumbers'] ?? 'N/A';
+    final waiterNames = bill['waiterNames'] ?? 'N/A';
+    final paymentMethod = bill['paymentMethod'] ?? 'Not set';
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: isPending ? AppConstants.warningOrange.withOpacity(0.5) : AppConstants.successGreen.withOpacity(0.5)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with status indicator
+            // Header with vintage style
             Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: isPending ? AppConstants.warningOrange.withOpacity(0.2) : AppConstants.successGreen.withOpacity(0.2),
+                    color: isPending ? AppConstants.warningOrange.withOpacity(0.1) : AppConstants.successGreen.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    isPending ? Icons.pending : Icons.check_circle,
+                    isPending ? Icons.hourglass_empty : Icons.check,
                     color: isPending ? AppConstants.warningOrange : AppConstants.successGreen,
                     size: 20,
                   ),
@@ -337,50 +365,63 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
                         'Bill #${bill['id']}',
                         style: TextStyle(
                           color: AppConstants.textPrimary,
-                          fontSize: 16,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          fontFamily: 'Georgia',
                         ),
                       ),
                       Text(
-                        DateFormat('dd MMM yyyy, HH:mm').format(dateTime),
+                        DateFormat('dd MMM yyyy, hh:mm a').format(dateTime),
                         style: TextStyle(color: AppConstants.textSecondary, fontSize: 12),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: isPending ? AppConstants.warningOrange : AppConstants.successGreen,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     '₹${total.toStringAsFixed(2)}',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            // Item summary
+            const SizedBox(height: 12),
+            // Details in a two-column layout
             Row(
               children: [
-                Icon(Icons.receipt, size: 16, color: AppConstants.textSecondary),
-                const SizedBox(width: 4),
-                Text(
-                  '$itemCount item${itemCount != 1 ? 's' : ''}',
-                  style: TextStyle(color: AppConstants.textSecondary, fontSize: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDetailRow('Table', tableNumbers),
+                      _buildDetailRow('Waiter', waiterNames),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDetailRow('Items', '$itemCount'),
+                      _buildDetailRow('Payment', paymentMethod),
+                    ],
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            // Action buttons (text buttons instead of icons)
+            const Divider(height: 20),
+            // Action buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 _buildActionButton(
                   label: 'View',
-                  icon: Icons.visibility,
+                  icon: Icons.receipt,
                   color: AppConstants.tealPrimary,
                   onPressed: () => _viewBill(bill),
                 ),
@@ -395,7 +436,7 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
                   const SizedBox(width: 8),
                   _buildActionButton(
                     label: 'Confirm',
-                    icon: Icons.check_circle,
+                    icon: Icons.check,
                     color: AppConstants.successGreen,
                     onPressed: () => _confirmBill(bill),
                   ),
@@ -404,6 +445,19 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Text('$label:', style: TextStyle(color: AppConstants.textSecondary, fontWeight: FontWeight.w500)),
+          const SizedBox(width: 8),
+          Expanded(child: Text(value, style: const TextStyle(color: AppConstants.textPrimary))),
+        ],
       ),
     );
   }
@@ -417,12 +471,12 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
     return ElevatedButton.icon(
       onPressed: onPressed,
       icon: Icon(icon, size: 16),
-      label: Text(label, style: const TextStyle(fontSize: 12)),
+      label: Text(label),
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         foregroundColor: Colors.white,
-        minimumSize: const Size(70, 32),
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        minimumSize: const Size(70, 36),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
       ),
     );
@@ -436,7 +490,7 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
   }
 
   void _editBill(Map<String, dynamic> bill) {
-    // TODO: Implement bill edit page
+    // Placeholder for edit functionality
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Edit feature coming soon')),
     );

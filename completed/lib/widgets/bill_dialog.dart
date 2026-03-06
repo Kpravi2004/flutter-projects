@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/order_item.dart';
-import '../utils/constants.dart'; // <-- changed to constants
+import '../utils/constants.dart';
 import '../utils/helpers.dart';
 
-class BillDialog extends StatelessWidget {
+class BillDialog extends StatefulWidget {
   final List<OrderItem> items;
   final DateTime orderDateTime;
-  final VoidCallback onConfirm;
+  final Function(String paymentMethod) onConfirm; // now passes payment method
 
   const BillDialog({
     super.key,
@@ -15,7 +15,14 @@ class BillDialog extends StatelessWidget {
     required this.onConfirm,
   });
 
-  double get _subtotal => items.fold(0, (sum, item) => sum + (item.subtotal ?? 0));
+  @override
+  State<BillDialog> createState() => _BillDialogState();
+}
+
+class _BillDialogState extends State<BillDialog> {
+  String _selectedPaymentMethod = 'Cash'; // default
+
+  double get _subtotal => widget.items.fold(0, (sum, item) => sum + (item.subtotal ?? 0));
   double get _tax => _subtotal * 0.05;
   double get _total => _subtotal + _tax;
 
@@ -39,40 +46,32 @@ class BillDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header with restaurant name
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: AppConstants.tealPrimary,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              child: Column(
-                children: [
-                  const Text(
-                    'SENTINIX RESTAURANT',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Bill Generated: ${Helpers.formatDate(orderDateTime)} ${Helpers.formatTime(orderDateTime)}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                ],
+              child: const Text(
+                'SENTINIX RESTAURANT',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
               ),
             ),
-
-            // Bill details
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Table headers
+                  Text(
+                    'Bill Generated: ${Helpers.formatDate(widget.orderDateTime)} ${Helpers.formatTime(widget.orderDateTime)}',
+                    style: TextStyle(color: AppConstants.textSecondary, fontSize: 13),
+                  ),
+                  const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
@@ -91,9 +90,7 @@ class BillDialog extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-
-                  // Item rows
-                  ...items.map((item) => Padding(
+                  ...widget.items.map((item) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
                       children: [
@@ -140,10 +137,7 @@ class BillDialog extends StatelessWidget {
                       ],
                     ),
                   )),
-
                   const SizedBox(height: 16),
-
-                  // Subtotal, tax, total
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -160,10 +154,33 @@ class BillDialog extends StatelessWidget {
                       ],
                     ),
                   ),
-
+                  const SizedBox(height: 16),
+                  // Payment method dropdown
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppConstants.tealPrimary.withOpacity(0.5)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedPaymentMethod,
+                        isExpanded: true,
+                        items: const [
+                          DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+                          DropdownMenuItem(value: 'Card', child: Text('Card')),
+                          DropdownMenuItem(value: 'UPI', child: Text('UPI')),
+                          DropdownMenuItem(value: 'Other', child: Text('Other')),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedPaymentMethod = value!;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 20),
-
-                  // Buttons
                   Row(
                     children: [
                       Expanded(
@@ -187,7 +204,9 @@ class BillDialog extends StatelessWidget {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          onPressed: onConfirm,
+                          onPressed: () {
+                            widget.onConfirm(_selectedPaymentMethod);
+                          },
                           child: const Text('Confirm Bill', style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ),

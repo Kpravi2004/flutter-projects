@@ -64,8 +64,8 @@ class _OrderPageState extends State<OrderPage> {
       builder: (ctx) => BillDialog(
         items: items,
         orderDateTime: DateTime.now(),
-        onConfirm: () async {
-          // 1. Create bill in backend with status 'pending'
+        onConfirm: (paymentMethod) async {
+          // 1. Create bill in backend with status 'pending' and payment method
           try {
             await ApiService.createBill(
               seatIds: widget.seatIds ?? [],
@@ -77,7 +77,8 @@ class _OrderPageState extends State<OrderPage> {
                 'subtotal': item.subtotal,
               }).toList(),
               total: total,
-              status: 'pending', // <-- added status
+              status: 'pending',
+              paymentMethod: paymentMethod,
             );
           } catch (e) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -86,10 +87,10 @@ class _OrderPageState extends State<OrderPage> {
                 backgroundColor: AppConstants.errorRed,
               ),
             );
-            return; // stop further actions
+            return;
           }
 
-          // 2. Mark seats as billed if seatIds are provided
+          // 2. Mark seats as billed
           if (widget.seatIds != null && widget.seatIds!.isNotEmpty) {
             try {
               for (int seatId in widget.seatIds!) {
@@ -105,7 +106,7 @@ class _OrderPageState extends State<OrderPage> {
             }
           }
 
-          // 3. Call the callback to refresh tables
+          // 3. Callback to refresh tables
           widget.onBillConfirmed?.call();
 
           // 4. Close dialog and clear cart

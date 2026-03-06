@@ -392,14 +392,16 @@ class ApiService {
     required List<int> seatIds,
     required List<Map<String, dynamic>> items,
     required double total,
-    String? status,  // optional status
+    String? status,
+    String? paymentMethod,  // new
   }) async {
     final url = Uri.parse('$baseUrl/bills');
     final payload = {
       'seatIds': seatIds,
       'items': items,
       'total': total,
-      if (status != null) 'status': status,  // include if provided
+      if (status != null) 'status': status,
+      if (paymentMethod != null) 'paymentMethod': paymentMethod,
     };
     print('POST $url with payload: $payload');
     try {
@@ -440,8 +442,17 @@ class ApiService {
     throw Exception('Failed to load bills');
   }
 
-  static Future<void> confirmBill(int billId) async {
-    final response = await http.put(Uri.parse('$baseUrl/bills/$billId/confirm'));
+  static Future<void> confirmBill(int billId, {String? paymentMethod}) async {
+    final url = Uri.parse('$baseUrl/bills/$billId/confirm');
+    final Map<String, dynamic> body = {};
+    if (paymentMethod != null) {
+      body['paymentMethod'] = paymentMethod;
+    }
+    final response = await http.put(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(body),
+    );
     if (response.statusCode != 200) {
       throw Exception('Failed to confirm bill');
     }

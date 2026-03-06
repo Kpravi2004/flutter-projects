@@ -20,6 +20,7 @@ class BillViewDialog extends StatelessWidget {
 
     String tableNumbers = bill['tableNumbers'] ?? 'N/A';
     String waiterNames = bill['waiterNames'] ?? 'N/A';
+    String paymentMethod = bill['paymentMethod'] ?? 'N/A';
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -138,14 +139,23 @@ class BillViewDialog extends StatelessWidget {
             ),
             const Divider(thickness: 1, color: Colors.grey),
 
-            // Payment and footer
-            Text('Payment Method: Cash', style: TextStyle(color: AppConstants.textSecondary, fontSize: 12)),
+            // Payment method
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Payment:', style: TextStyle(fontSize: 13)),
+                Text(paymentMethod, style: const TextStyle(fontSize: 13)),
+              ],
+            ),
             const SizedBox(height: 8),
+
+            // Footer
             Text(
               'Thank You! Visit Again',
               style: TextStyle(color: AppConstants.tealPrimary, fontSize: 14, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
+
             // Close button
             ElevatedButton(
               onPressed: () => Navigator.pop(context),

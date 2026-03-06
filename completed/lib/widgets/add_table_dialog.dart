@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/table_model.dart';
+import '../utils/constants.dart';
 import '../utils/helpers.dart';
 
 class AddTableDialog extends StatefulWidget {
@@ -41,7 +42,24 @@ class _AddTableDialogState extends State<AddTableDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Add New Table', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            // Table icon at top
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppConstants.tealLight,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.table_restaurant,
+                color: AppConstants.tealPrimary,
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Add New Table',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 20),
 
             TextField(
@@ -81,7 +99,7 @@ class _AddTableDialogState extends State<AddTableDialog> {
                 const Text('Seats:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                 const SizedBox(width: 16),
                 IconButton(
-                  icon: const Icon(Icons.remove_circle_outline),
+                  icon: Icon(Icons.remove_circle_outline, color: AppConstants.errorRed), // red for decrease
                   onPressed: selectedSeats > 1 ? () => setState(() => selectedSeats--) : null,
                 ),
                 Container(
@@ -91,7 +109,7 @@ class _AddTableDialogState extends State<AddTableDialog> {
                   child: Text('$selectedSeats', textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.add_circle_outline),
+                  icon: Icon(Icons.add_circle_outline, color: AppConstants.successGreen), // green for increase
                   onPressed: selectedSeats < 20 ? () => setState(() => selectedSeats++) : null,
                 ),
               ],
@@ -137,6 +155,6 @@ class _AddTableDialogState extends State<AddTableDialog> {
     );
 
     widget.onTableAdded(newTable);
-    Navigator.pop(context);
+    // Dialog will be closed by the caller after table creation
   }
 }

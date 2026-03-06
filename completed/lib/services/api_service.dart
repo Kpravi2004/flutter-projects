@@ -12,7 +12,7 @@ import '../models/order_item.dart';
 import '../utils/constants.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:8080';
+  static const String baseUrl = 'http://localhost:8080'; // e.g., 'http://localhost:8080'
 
   // ==================== TABLES ====================
 
@@ -166,6 +166,7 @@ class ApiService {
     }
   }
 
+  // Full seat update (seatNo, status, colorCode)
   static Future<SeatModel> updateSeat({
     required int seatId,
     required int seatNo,
@@ -237,6 +238,7 @@ class ApiService {
     }
   }
 
+  // Dedicated method to update only billing status
   static Future<void> updateSeatBillingStatus(int seatId, bool billingStatus) async {
     final url = Uri.parse('$baseUrl/seats/$seatId/billing-status');
     final response = await http.put(
@@ -418,5 +420,4 @@ class ApiService {
       rethrow;
     }
   }
-
 }

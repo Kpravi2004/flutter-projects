@@ -15,7 +15,7 @@ import '../services/api_service.dart';
 import '../models/seat_model.dart';
 import 'bill_seat_selection_screen.dart';
 import 'order_page.dart'; // ADDED
-
+import '../widgets/seat_edit_dialog.dart';
 class MobileTableScreen extends StatefulWidget {
   const MobileTableScreen({Key? key}) : super(key: key);
 
@@ -733,17 +733,17 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                 status: 'Free',
                 colorCode: 'White',
                 tableId: created.id,
+                billingStatus: false,
               ),
             );
 
-            // Use SeatSelectionDialog for initial seat configuration
+            // Use the new SeatEditDialog for initial seat configuration
             bool? configured = await showDialog(
               context: context,
-              builder: (ctx) => SeatSelectionDialog(
+              builder: (ctx) => SeatEditDialog(
                 seats: defaultSeats,
-                maxGuests: created.maxGuests,
                 tableNumber: int.parse(created.number),
-                onSeatsSelected: (selectedSeats) async {
+                onSave: (selectedSeats) async {
                   // Save the selected seats via API
                   for (var seat in selectedSeats) {
                     if (seat.id == 0) {
@@ -754,10 +754,16 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
                         colorCode: seat.colorCode,
                       );
                     } else {
-                      await ApiService.updateSeatStatus(
+                      await ApiService.updateSeat(
                         seatId: seat.id,
+                        seatNo: seat.seatNo,
                         status: seat.status,
+                        colorCode: seat.colorCode,
                       );
+                    }
+                    // Also update billing status if changed (for existing seats)
+                    if (seat.id != 0) {
+                      await ApiService.updateSeatBillingStatus(seat.id, seat.billingStatus);
                     }
                   }
                 },
@@ -1302,142 +1308,38 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
       return;
     }
 
-    List<SeatModel> tempSeats = fetchedSeats
-        .map((s) => SeatModel(
-      id: s.id,
-      seatNo: s.seatNo,
-      status: s.status,
-      colorCode: s.colorCode,
-      tableId: s.tableId,
-    ))
-        .toList()
-      ..sort((a, b) => a.seatNo.compareTo(b.seatNo));
-
-    showDialog(
+    bool? saved = await showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: AppConstants.lightSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          width: 400,
-          padding: const EdgeInsets.all(20),
-          child: StatefulBuilder(
-            builder: (context, setState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Edit Seats', style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeXl, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Text('Table ${table.number} • ${tempSeats.length} seats', style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeSm)),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 300,
-                    child: ListView.separated(
-                      itemCount: tempSeats.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 4),
-                      itemBuilder: (context, idx) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: AppConstants.lightSurface,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppConstants.tealPrimary.withOpacity(0.2), width: AppConstants.borderThin),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: tempSeats[idx].status == 'Occupied'
-                                      ? AppConstants.successGreen
-                                      : tempSeats[idx].status == 'Reserved'
-                                      ? AppConstants.warningOrange
-                                      : Colors.grey,
-                                ),
-                                child: Center(child: Text('${tempSeats[idx].seatNo}', style: const TextStyle(color: Colors.white, fontSize: AppConstants.fontSizeSm, fontWeight: FontWeight.bold))),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(child: Text('Seat ${tempSeats[idx].seatNo}', style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeSm))),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: AppConstants.tealPrimary.withOpacity(0.3), width: AppConstants.borderThin),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String>(
-                                    value: tempSeats[idx].status,
-                                    dropdownColor: AppConstants.lightSurface,
-                                    style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeSm),
-                                    icon: Icon(Icons.arrow_drop_down, color: AppConstants.tealPrimary, size: 22),
-                                    items: const [
-                                      DropdownMenuItem(value: 'Free', child: Text('Free')),
-                                      DropdownMenuItem(value: 'Occupied', child: Text('Occupied')),
-                                      DropdownMenuItem(value: 'Reserved', child: Text('Reserved')),
-                                    ],
-                                    onChanged: (v) => setState(() => tempSeats[idx].status = v!),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text('Cancel', style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeMd)),
-                      )),
-                      const SizedBox(width: 8),
-                      Expanded(child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppConstants.tealPrimary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        onPressed: () async {
-                          Navigator.pop(context); // close dialog
-                          try {
-                            // Use full seat update for each seat
-                            for (var seat in tempSeats) {
-                              await ApiService.updateSeat(
-                                seatId: seat.id,
-                                seatNo: seat.seatNo,
-                                status: seat.status,
-                                colorCode: seat.colorCode,
-                              );
-                            }
-
-                            // Recalculate table status based on occupied seats
-                            int occCount = tempSeats.where((s) => s.status == 'Occupied').length;
-                            table.guests = occCount;
-                            table.status = occCount > 0 ? TableStatus.occupied : TableStatus.free;
-
-                            // Refresh table list
-                            await _fetchTables();
-                            _showSuccess('Seats updated');
-                          } catch (e) {
-                            print('Error updating seats: $e');
-                            _showError('Failed to update seats: $e');
-                            await _fetchTables();
-                          }
-                        },
-                        child: const Text('Save Seats'),
-                      )),
-                    ],
-                  ),
-                ],
+      builder: (context) => SeatEditDialog(
+        seats: fetchedSeats!,
+        tableNumber: int.parse(table.number),
+        onSave: (updatedSeats) async {
+          try {
+            // Update each seat
+            for (var seat in updatedSeats) {
+              await ApiService.updateSeat(
+                seatId: seat.id,
+                seatNo: seat.seatNo,
+                status: seat.status,
+                colorCode: seat.colorCode,
               );
-            },
-          ),
-        ),
+              // Update billing status if changed
+              await ApiService.updateSeatBillingStatus(seat.id, seat.billingStatus);
+            }
+
+            // Recalculate table status based on occupied seats
+            int occCount = updatedSeats.where((s) => s.status == 'Occupied').length;
+            table.guests = occCount;
+            table.status = occCount > 0 ? TableStatus.occupied : TableStatus.free;
+
+            // Refresh table list
+            await _fetchTables();
+            _showSuccess('Seats updated');
+          } catch (e) {
+            _showError('Failed to update seats: $e');
+            await _fetchTables();
+          }
+        },
       ),
     );
   }

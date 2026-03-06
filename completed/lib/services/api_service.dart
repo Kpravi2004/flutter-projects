@@ -392,12 +392,14 @@ class ApiService {
     required List<int> seatIds,
     required List<Map<String, dynamic>> items,
     required double total,
+    String? status,  // optional status
   }) async {
     final url = Uri.parse('$baseUrl/bills');
     final payload = {
       'seatIds': seatIds,
       'items': items,
       'total': total,
+      if (status != null) 'status': status,  // include if provided
     };
     print('POST $url with payload: $payload');
     try {

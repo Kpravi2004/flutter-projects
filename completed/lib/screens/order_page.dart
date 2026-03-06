@@ -65,7 +65,7 @@ class _OrderPageState extends State<OrderPage> {
         items: items,
         orderDateTime: DateTime.now(),
         onConfirm: () async {
-          // 1. Create bill in backend
+          // 1. Create bill in backend with status 'pending'
           try {
             await ApiService.createBill(
               seatIds: widget.seatIds ?? [],
@@ -77,6 +77,7 @@ class _OrderPageState extends State<OrderPage> {
                 'subtotal': item.subtotal,
               }).toList(),
               total: total,
+              status: 'pending', // <-- added status
             );
           } catch (e) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -114,7 +115,7 @@ class _OrderPageState extends State<OrderPage> {
           // 5. Show success
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Order placed!'),
+              content: Text('Bill created!'),
               backgroundColor: AppConstants.successGreen,
             ),
           );
@@ -374,7 +375,7 @@ class _OrderPageState extends State<OrderPage> {
                 elevation: 4,
               ),
               child: const Text(
-                'GENERATE BILL',
+                'CREATE BILL',  // <-- changed from 'GENERATE BILL'
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1),
               ),
             ),

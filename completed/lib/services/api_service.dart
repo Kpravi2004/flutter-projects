@@ -422,4 +422,28 @@ class ApiService {
       rethrow;
     }
   }
+  // ==================== BILLS (additional) ====================
+
+  static Future<List<dynamic>> fetchAllBills() async {
+    final response = await http.get(Uri.parse('$baseUrl/bills'));
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+    throw Exception('Failed to load bills');
+  }
+
+  static Future<List<dynamic>> fetchBillsByStatus(String status) async {
+    final response = await http.get(Uri.parse('$baseUrl/bills/status/$status'));
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+    throw Exception('Failed to load bills');
+  }
+
+  static Future<void> confirmBill(int billId) async {
+    final response = await http.put(Uri.parse('$baseUrl/bills/$billId/confirm'));
+    if (response.statusCode != 200) {
+      throw Exception('Failed to confirm bill');
+    }
+  }
 }

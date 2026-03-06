@@ -3,22 +3,25 @@ import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../models/order_item.dart';
 import '../providers/product_provider.dart';
+import '../services/api_service.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
-import '../widgets/bill_dialog.dart';
-import '../services/api_service.dart';
 
-class OrderPage extends StatefulWidget {
-  final List<int>? seatIds;
-  final VoidCallback? onBillConfirmed;
+class BillOrderPage extends StatefulWidget {
+  final int billId;
+  final List<Map<String, dynamic>> existingItems;
 
-  const OrderPage({super.key, this.seatIds, this.onBillConfirmed});
+  const BillOrderPage({
+    Key? key,
+    required this.billId,
+    required this.existingItems,
+  }) : super(key: key);
 
   @override
-  State<OrderPage> createState() => _OrderPageState();
+  State<BillOrderPage> createState() => _BillOrderPageState();
 }
 
-class _OrderPageState extends State<OrderPage> {
+class _BillOrderPageState extends State<BillOrderPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _selectedCategory = 'All';
@@ -44,77 +47,81 @@ class _OrderPageState extends State<OrderPage> {
     }).toList();
   }
 
-  void _showBill() {
+  void _addToCart(Product product) {
+    setState(() {
+      if (_cart.containsKey(product.code)) {
+        _cart[product.code] = _cart[product.code]! + 1;
+      } else {
+        _cart[product.code] = 1;
+      }
+    });
+  }
+
+  void _removeFromCart(Product product) {
+    setState(() {
+      if (_cart.containsKey(product.code)) {
+        if (_cart[product.code]! > 1) {
+          _cart[product.code] = _cart[product.code]! - 1;
+        } else {
+          _cart.remove(product.code);
+        }
+      }
+    });
+  }
+
+  double get _total {
+    double total = 0;
+    final products = context.read<ProductProvider>().products;
+    _cart.forEach((code, qty) {
+      final product = products.firstWhere((p) => p.code == code);
+      total += product.price * qty;
+    });
+    return total;
+  }
+
+  Future<void> _addToBill() async {
     if (_cart.isEmpty) return;
 
-    final items = _cart.entries.map((entry) {
-      final product = context.read<ProductProvider>().products.firstWhere((p) => p.code == entry.key);
-      return OrderItem(
-        productCode: product.code,
-        productName: product.name,
-        quantity: entry.value,
-        unitPrice: product.price,
+    final Map<String, int> combinedItems = {};
+    for (var item in widget.existingItems) {
+      String code = item['productCode'].toString();
+      combinedItems[code] = item['quantity'];
+    }
+    _cart.forEach((code, qty) {
+      if (combinedItems.containsKey(code)) {
+        combinedItems[code] = combinedItems[code]! + qty;
+      } else {
+        combinedItems[code] = qty;
+      }
+    });
+
+    final products = context.read<ProductProvider>().products;
+    List<Map<String, dynamic>> items = [];
+    combinedItems.forEach((code, qty) {
+      final product = products.firstWhere((p) => p.code == code);
+      items.add({
+        'productCode': code,
+        'productName': product.name,
+        'quantity': qty,
+        'unitPrice': product.price,
+        'subtotal': product.price * qty,
+      });
+    });
+
+    double total = items.fold(0, (sum, item) => sum + item['subtotal']);
+
+    try {
+      await ApiService.updateBill(widget.billId, items, total);
+      if (!mounted) return;
+      Navigator.pop(context, true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Products added to bill'), backgroundColor: AppConstants.successGreen),
       );
-    }).toList();
-
-    final total = items.fold(0.0, (sum, item) => sum + (item.subtotal ?? 0));
-
-    showDialog(
-      context: context,
-      builder: (ctx) => BillDialog(
-        items: items,
-        orderDateTime: DateTime.now(),
-        onConfirm: () async {   // <-- no parameter
-          try {
-            await ApiService.createBill(
-              seatIds: widget.seatIds ?? [],
-              items: items.map((item) => {
-                'productCode': item.productCode,
-                'productName': item.productName,
-                'quantity': item.quantity,
-                'unitPrice': item.unitPrice,
-                'subtotal': item.subtotal,
-              }).toList(),
-              total: total,
-              status: 'pending',
-            );
-          } catch (e) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Failed to create bill: $e'),
-                backgroundColor: AppConstants.errorRed,
-              ),
-            );
-            return;
-          }
-
-          if (widget.seatIds != null && widget.seatIds!.isNotEmpty) {
-            try {
-              for (int seatId in widget.seatIds!) {
-                await ApiService.updateSeatBillingStatus(seatId, true);
-              }
-            } catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Failed to mark seats: $e'),
-                  backgroundColor: AppConstants.errorRed,
-                ),
-              );
-            }
-          }
-
-          widget.onBillConfirmed?.call();
-          Navigator.pop(ctx);
-          setState(() => _cart.clear());
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Bill created!'),
-              backgroundColor: AppConstants.successGreen,
-            ),
-          );
-        },
-      ),
-    );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to add products: $e'), backgroundColor: AppConstants.errorRed),
+      );
+    }
   }
 
   @override
@@ -124,13 +131,19 @@ class _OrderPageState extends State<OrderPage> {
     return Scaffold(
       backgroundColor: AppConstants.lightBackground,
       appBar: AppBar(
-        title: const Text('Order Products'),
+        title: Text('Add to Bill #${widget.billId}'),
         backgroundColor: AppConstants.tealPrimary,
-        foregroundColor: Colors.white,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          if (_cart.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.shopping_cart_checkout),
+              onPressed: _addToBill,
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -145,14 +158,14 @@ class _OrderPageState extends State<OrderPage> {
                     decoration: BoxDecoration(
                       color: AppConstants.lightSurface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppConstants.tealPrimary.withOpacity(0.4), width: 1.5),
+                      border: Border.all(color: AppConstants.tealPrimary.withOpacity(0.4), width: 2.0), // thicker border
                     ),
                     child: TextField(
                       controller: _searchController,
                       onChanged: (v) => setState(() => _searchQuery = v),
                       style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14),
                       decoration: InputDecoration(
-                        hintText: 'Search by name/code',
+                        hintText: 'Search products...',
                         hintStyle: TextStyle(color: AppConstants.textHint),
                         prefixIcon: Icon(Icons.search, color: AppConstants.tealPrimary, size: 20),
                         border: InputBorder.none,
@@ -168,7 +181,7 @@ class _OrderPageState extends State<OrderPage> {
                   decoration: BoxDecoration(
                     color: AppConstants.lightSurface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppConstants.tealPrimary.withOpacity(0.4), width: 1.5),
+                    border: Border.all(color: AppConstants.tealPrimary.withOpacity(0.4), width: 2.0), // thicker border
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: DropdownButtonHideUnderline(
@@ -184,9 +197,7 @@ class _OrderPageState extends State<OrderPage> {
                           child: Text(cat, overflow: TextOverflow.ellipsis),
                         );
                       }).toList(),
-                      onChanged: (value) {
-                        setState(() => _selectedCategory = value!);
-                      },
+                      onChanged: (value) => setState(() => _selectedCategory = value!),
                     ),
                   ),
                 ),
@@ -220,15 +231,8 @@ class _OrderPageState extends State<OrderPage> {
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: AppConstants.tealPrimary.withOpacity(0.2),
-                          width: 1.0,
+                          width: 1.5, // slightly thicker border
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
                       ),
                       child: ListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -284,33 +288,13 @@ class _OrderPageState extends State<OrderPage> {
                               ),
                             ),
                             const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: AppConstants.tealLight,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    product.category,
-                                    style: const TextStyle(
-                                      color: AppConstants.tealPrimary,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '₹${product.price.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    color: AppConstants.tealPrimary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
+                            Text(
+                              '₹${product.price.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                color: AppConstants.tealPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
                             ),
                           ],
                         ),
@@ -321,13 +305,7 @@ class _OrderPageState extends State<OrderPage> {
                               icon: Icon(Icons.remove_circle_outline,
                                   color: qty > 0 ? AppConstants.errorRed : Colors.grey, size: 22),
                               onPressed: qty > 0
-                                  ? () => setState(() {
-                                if (qty == 1) {
-                                  _cart.remove(product.code);
-                                } else {
-                                  _cart[product.code] = qty - 1;
-                                }
-                              })
+                                  ? () => _removeFromCart(product)
                                   : null,
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
@@ -343,7 +321,7 @@ class _OrderPageState extends State<OrderPage> {
                             ),
                             IconButton(
                               icon: Icon(Icons.add_circle_outline, color: AppConstants.successGreen, size: 22),
-                              onPressed: () => setState(() => _cart[product.code] = qty + 1),
+                              onPressed: () => _addToCart(product),
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                             ),
@@ -356,23 +334,56 @@ class _OrderPageState extends State<OrderPage> {
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton(
-              onPressed: _cart.isEmpty ? null : _showBill,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppConstants.tealPrimary,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 52),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 4,
+          if (_cart.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppConstants.lightSurface,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
               ),
-              child: const Text(
-                'CREATE BILL',  // <-- changed from 'GENERATE BILL'
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Total (additional)',
+                          style: TextStyle(color: AppConstants.textSecondary, fontSize: 12),
+                        ),
+                        Text(
+                          '₹${_total.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            color: AppConstants.tealPrimary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: _addToBill,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppConstants.successGreen,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: const Text('Add to Bill'),
+                  ),
+                ],
               ),
             ),
-          ),
         ],
       ),
     );

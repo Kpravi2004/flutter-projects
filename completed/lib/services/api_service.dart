@@ -457,4 +457,19 @@ class ApiService {
       throw Exception('Failed to confirm bill');
     }
   }
+  static Future<void> updateBill(int billId, List<Map<String, dynamic>> items, double total) async {
+    final url = Uri.parse('$baseUrl/bills/$billId');
+    final payload = {
+      'items': items,
+      'total': total,
+    };
+    final response = await http.put(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(payload),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update bill');
+    }
+  }
 }

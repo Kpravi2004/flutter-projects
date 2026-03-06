@@ -3,10 +3,10 @@ import '../models/order_item.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
 
-class BillDialog extends StatefulWidget {
+class BillDialog extends StatelessWidget {
   final List<OrderItem> items;
   final DateTime orderDateTime;
-  final Function(String paymentMethod) onConfirm; // now passes payment method
+  final VoidCallback onConfirm;
 
   const BillDialog({
     super.key,
@@ -15,14 +15,7 @@ class BillDialog extends StatefulWidget {
     required this.onConfirm,
   });
 
-  @override
-  State<BillDialog> createState() => _BillDialogState();
-}
-
-class _BillDialogState extends State<BillDialog> {
-  String _selectedPaymentMethod = 'Cash'; // default
-
-  double get _subtotal => widget.items.fold(0, (sum, item) => sum + (item.subtotal ?? 0));
+  double get _subtotal => items.fold(0, (sum, item) => sum + (item.subtotal ?? 0));
   double get _tax => _subtotal * 0.05;
   double get _total => _subtotal + _tax;
 
@@ -68,7 +61,7 @@ class _BillDialogState extends State<BillDialog> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Bill Generated: ${Helpers.formatDate(widget.orderDateTime)} ${Helpers.formatTime(widget.orderDateTime)}',
+                    'Bill Generated: ${Helpers.formatDate(orderDateTime)} ${Helpers.formatTime(orderDateTime)}',
                     style: TextStyle(color: AppConstants.textSecondary, fontSize: 13),
                   ),
                   const SizedBox(height: 16),
@@ -90,7 +83,7 @@ class _BillDialogState extends State<BillDialog> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  ...widget.items.map((item) => Padding(
+                  ...items.map((item) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
                       children: [
@@ -154,32 +147,6 @@ class _BillDialogState extends State<BillDialog> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  // Payment method dropdown
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppConstants.tealPrimary.withOpacity(0.5)),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedPaymentMethod,
-                        isExpanded: true,
-                        items: const [
-                          DropdownMenuItem(value: 'Cash', child: Text('Cash')),
-                          DropdownMenuItem(value: 'Card', child: Text('Card')),
-                          DropdownMenuItem(value: 'UPI', child: Text('UPI')),
-                          DropdownMenuItem(value: 'Other', child: Text('Other')),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedPaymentMethod = value!;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
                   const SizedBox(height: 20),
                   Row(
                     children: [
@@ -204,9 +171,7 @@ class _BillDialogState extends State<BillDialog> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          onPressed: () {
-                            widget.onConfirm(_selectedPaymentMethod);
-                          },
+                          onPressed: onConfirm,
                           child: const Text('Confirm Bill', style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ),

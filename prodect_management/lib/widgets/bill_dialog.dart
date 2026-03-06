@@ -26,8 +26,8 @@ class BillDialog extends StatelessWidget {
       child: Container(
         width: 460,
         decoration: BoxDecoration(
-          color: AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(24),
+          color: AppConstants.lightSurface,
+          borderRadius: BorderRadius.circular(AppConstants.radiusXl),
           boxShadow: [
             BoxShadow(
               color: Colors.black12,
@@ -41,23 +41,25 @@ class BillDialog extends StatelessWidget {
           children: [
             // Header with restaurant name
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(AppConstants.spacingLg),
               decoration: BoxDecoration(
-                color: AppColors.primaryPink,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                color: AppConstants.tealPrimary,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppConstants.radiusXl),
+                ),
               ),
               child: Column(
                 children: [
-                  const Text(
+                  Text(
                     'SENTINIX RESTAURANT',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                      fontSize: AppConstants.fontSizeXxl,
+                      fontWeight: AppConstants.fontWeightBold,
                       letterSpacing: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: AppConstants.spacingXs),
                   Text(
                     'Bill Generated: ${formatDate(orderDateTime)} ${formatTime(orderDateTime)}',
                     style: const TextStyle(color: Colors.white70, fontSize: 13),
@@ -68,33 +70,78 @@ class BillDialog extends StatelessWidget {
 
             // Bill details
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(AppConstants.spacingLg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Table headers
                   Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: EdgeInsets.symmetric(vertical: AppConstants.spacingSm),
                     decoration: BoxDecoration(
                       border: Border(
-                        bottom: BorderSide(color: AppColors.primaryPink.withOpacity(0.5), width: 1),
-                        top: BorderSide(color: AppColors.primaryPink.withOpacity(0.5), width: 1),
+                        bottom: BorderSide(
+                          color: AppConstants.tealPrimary.withOpacity(0.5),
+                          width: 1,
+                        ),
+                        top: BorderSide(
+                          color: AppConstants.tealPrimary.withOpacity(0.5),
+                          width: 1,
+                        ),
                       ),
                     ),
                     child: Row(
                       children: [
-                        Expanded(flex: 3, child: Text('Item', style: TextStyle(color: AppColors.primaryPink, fontWeight: FontWeight.bold))),
-                        Expanded(flex: 1, child: Text('Qty', style: TextStyle(color: AppColors.primaryPink, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
-                        Expanded(flex: 2, child: Text('Price', style: TextStyle(color: AppColors.primaryPink, fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
-                        Expanded(flex: 2, child: Text('Total', style: TextStyle(color: AppColors.primaryPink, fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
+                        Expanded(
+                          flex: 3,
+                          child: Text(
+                            'Item',
+                            style: TextStyle(
+                              color: AppConstants.tealPrimary,
+                              fontWeight: AppConstants.fontWeightBold,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 1,
+                          child: Text(
+                            'Qty',
+                            style: TextStyle(
+                              color: AppConstants.tealPrimary,
+                              fontWeight: AppConstants.fontWeightBold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            'Price',
+                            style: TextStyle(
+                              color: AppConstants.tealPrimary,
+                              fontWeight: AppConstants.fontWeightBold,
+                            ),
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            'Total',
+                            style: TextStyle(
+                              color: AppConstants.tealPrimary,
+                              fontWeight: AppConstants.fontWeightBold,
+                            ),
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: AppConstants.spacingSm),
 
                   // Item rows
                   ...items.map((item) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    padding: EdgeInsets.symmetric(vertical: AppConstants.spacingXs),
                     child: Row(
                       children: [
                         Expanded(
@@ -104,11 +151,17 @@ class BillDialog extends StatelessWidget {
                             children: [
                               Text(
                                 item.productName,
-                                style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                                style: TextStyle(
+                                  color: AppConstants.textPrimary,
+                                  fontSize: AppConstants.fontSizeSm,
+                                ),
                               ),
                               Text(
                                 'Code: ${item.productCode}',
-                                style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                                style: TextStyle(
+                                  color: AppConstants.textSecondary,
+                                  fontSize: AppConstants.fontSizeXs,
+                                ),
                               ),
                             ],
                           ),
@@ -117,7 +170,10 @@ class BillDialog extends StatelessWidget {
                           flex: 1,
                           child: Text(
                             '${item.quantity}',
-                            style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                            style: TextStyle(
+                              color: AppConstants.textPrimary,
+                              fontSize: AppConstants.fontSizeSm,
+                            ),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -125,7 +181,10 @@ class BillDialog extends StatelessWidget {
                           flex: 2,
                           child: Text(
                             '₹ ${item.unitPrice.toStringAsFixed(2)}',
-                            style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                            style: TextStyle(
+                              color: AppConstants.textPrimary,
+                              fontSize: AppConstants.fontSizeSm,
+                            ),
                             textAlign: TextAlign.right,
                           ),
                         ),
@@ -133,7 +192,10 @@ class BillDialog extends StatelessWidget {
                           flex: 2,
                           child: Text(
                             '₹ ${item.subtotal!.toStringAsFixed(2)}',
-                            style: const TextStyle(color: AppColors.primaryPink, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              color: AppConstants.tealPrimary,
+                              fontWeight: AppConstants.fontWeightSemiBold,
+                            ),
                             textAlign: TextAlign.right,
                           ),
                         ),
@@ -141,27 +203,27 @@ class BillDialog extends StatelessWidget {
                     ),
                   )),
 
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppConstants.spacingMd),
 
                   // Subtotal, tax, total
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(AppConstants.spacingMd),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceMedium,
-                      borderRadius: BorderRadius.circular(12),
+                      color: AppConstants.lightElevated,
+                      borderRadius: BorderRadius.circular(AppConstants.radiusMd),
                     ),
                     child: Column(
                       children: [
                         _buildSummaryRow('Subtotal:', _subtotal),
-                        const SizedBox(height: 6),
+                        SizedBox(height: AppConstants.spacingSm),
                         _buildSummaryRow('Tax (5%):', _tax),
-                        const Divider(color: AppColors.primaryPink),
+                        Divider(color: AppConstants.tealPrimary),
                         _buildSummaryRow('TOTAL:', _total, isTotal: true),
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  SizedBox(height: AppConstants.spacingLg),
 
                   // Buttons
                   Row(
@@ -170,25 +232,35 @@ class BillDialog extends StatelessWidget {
                         child: OutlinedButton(
                           onPressed: () => Navigator.pop(context),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textSecondary,
-                            side: BorderSide(color: AppColors.textSecondary.withOpacity(0.5)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            foregroundColor: AppConstants.textSecondary,
+                            side: BorderSide(
+                              color: AppConstants.textSecondary.withOpacity(0.5),
+                              width: AppConstants.borderNormal,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: AppConstants.spacingMd),
                           ),
                           child: const Text('Cancel'),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: AppConstants.spacingMd),
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryPink,
+                            backgroundColor: AppConstants.tealPrimary,
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: AppConstants.spacingMd),
                           ),
                           onPressed: onConfirm,
-                          child: const Text('Confirm Bill', style: TextStyle(fontWeight: FontWeight.bold)),
+                          child: const Text(
+                            'Confirm Bill',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ),
                     ],
@@ -209,17 +281,17 @@ class BillDialog extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            color: isTotal ? AppColors.textPrimary : AppColors.textSecondary,
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-            fontSize: isTotal ? 18 : 14,
+            color: isTotal ? AppConstants.textPrimary : AppConstants.textSecondary,
+            fontWeight: isTotal ? AppConstants.fontWeightBold : AppConstants.fontWeightNormal,
+            fontSize: isTotal ? AppConstants.fontSizeLg : AppConstants.fontSizeSm,
           ),
         ),
         Text(
           '₹ ${amount.toStringAsFixed(2)}',
           style: TextStyle(
-            color: isTotal ? AppColors.primaryPink : AppColors.textPrimary,
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
-            fontSize: isTotal ? 20 : 16,
+            color: isTotal ? AppConstants.tealPrimary : AppConstants.textPrimary,
+            fontWeight: isTotal ? AppConstants.fontWeightBold : AppConstants.fontWeightMedium,
+            fontSize: isTotal ? AppConstants.fontSizeXl : AppConstants.fontSizeMd,
           ),
         ),
       ],

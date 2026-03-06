@@ -65,7 +65,7 @@ class _ImagePickerButtonState extends State<ImagePickerButton> {
           kIsWeb
               ? (_webImageBytes != null
               ? ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppConstants.radiusSm),
             child: Image.memory(
               _webImageBytes!,
               width: 80,
@@ -79,7 +79,7 @@ class _ImagePickerButtonState extends State<ImagePickerButton> {
             child: Center(child: CircularProgressIndicator()),
           ))
               : ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppConstants.radiusSm),
             child: Image.file(
               File(_pickedFile!.path),
               width: 80,
@@ -92,22 +92,29 @@ class _ImagePickerButtonState extends State<ImagePickerButton> {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppColors.surfaceMedium,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.primaryPink.withOpacity(0.3)),
+              color: AppConstants.lightElevated,
+              borderRadius: BorderRadius.circular(AppConstants.radiusSm),
+              border: Border.all(
+                color: AppConstants.tealPrimary.withOpacity(0.3),
+                width: AppConstants.borderNormal,
+              ),
             ),
-            child: Icon(Icons.add_a_photo, color: AppColors.primaryPink),
+            child: Icon(
+              Icons.add_a_photo,
+              color: AppConstants.tealPrimary,
+              size: 30,
+            ),
           ),
-        const SizedBox(height: 8),
+        SizedBox(height: AppConstants.spacingSm),
         TextButton.icon(
           onPressed: _pickImage,
-          icon: Icon(Icons.camera_alt, color: AppColors.primaryPink, size: 16),
+          icon: Icon(Icons.camera_alt, color: AppConstants.tealPrimary, size: 16),
           label: Text(
             'Choose Image',
-            style: TextStyle(color: AppColors.primaryPink),
+            style: TextStyle(color: AppConstants.tealPrimary),
           ),
           style: TextButton.styleFrom(
-            foregroundColor: AppColors.primaryPink,
+            foregroundColor: AppConstants.tealPrimary,
           ),
         ),
       ],

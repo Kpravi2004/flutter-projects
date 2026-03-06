@@ -1,3 +1,5 @@
+// lib/main.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/product_provider.dart';
@@ -17,31 +19,40 @@ class MyApp extends StatelessWidget {
       create: (_) => ProductProvider()..loadProducts(),
       child: MaterialApp(
         title: 'Restaurant Manager',
+        debugShowCheckedModeBanner: false,
         theme: ThemeData.light().copyWith(
-          scaffoldBackgroundColor: AppColors.background,
-          primaryColor: AppColors.primaryPink,
+          scaffoldBackgroundColor: AppConstants.lightBackground,
+          primaryColor: AppConstants.tealPrimary,
           colorScheme: const ColorScheme.light(
-            primary: AppColors.primaryPink,
-            secondary: AppColors.primaryPink,
+            primary: AppConstants.tealPrimary,
+            secondary: AppConstants.coralAccent,
           ),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: AppColors.primaryPink,
-            foregroundColor: Colors.white,
+          appBarTheme: AppBarTheme(
+            backgroundColor: AppConstants.lightSurface,
+            foregroundColor: AppConstants.textPrimary,
+            elevation: 0,
+            titleTextStyle: TextStyle(
+              color: AppConstants.textPrimary,
+              fontSize: AppConstants.fontSizeLg,
+              fontWeight: AppConstants.fontWeightSemiBold,
+            ),
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryPink,
+              backgroundColor: AppConstants.tealPrimary,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+              ),
             ),
           ),
           textButtonTheme: TextButtonThemeData(
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.primaryPink,
+              foregroundColor: AppConstants.tealPrimary,
             ),
           ),
         ),
         home: const MainScreen(),
-        debugShowCheckedModeBanner: false,
       ),
     );
   }
@@ -81,9 +92,17 @@ class _MainScreenState extends State<MainScreen> {
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
         type: BottomNavigationBarType.fixed,
-        backgroundColor: AppColors.surfaceLight,
-        selectedItemColor: AppColors.primaryPink,
-        unselectedItemColor: AppColors.textSecondary,
+        backgroundColor: AppConstants.lightSurface,
+        selectedItemColor: AppConstants.tealPrimary,
+        unselectedItemColor: AppConstants.textSecondary,
+        selectedLabelStyle: TextStyle(
+          fontWeight: AppConstants.fontWeightMedium,
+          fontSize: AppConstants.fontSizeXs,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontWeight: AppConstants.fontWeightNormal,
+          fontSize: AppConstants.fontSizeXs,
+        ),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.inventory),

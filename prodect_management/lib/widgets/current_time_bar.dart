@@ -35,38 +35,41 @@ class _CurrentTimeBarState extends State<CurrentTimeBar> {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      color: AppColors.surfaceLight,
+      padding: EdgeInsets.symmetric(
+        horizontal: AppConstants.spacingMd,
+        vertical: AppConstants.spacingSm,
+      ),
+      color: AppConstants.lightSurface,
       child: Row(
         children: [
-          // Plain text – no gradient
           Text(
             'SENTINIX',
-            style: const TextStyle(
-              color: AppColors.primaryPink,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+            style: TextStyle(
+              color: AppConstants.tealPrimary,
+              fontSize: AppConstants.fontSizeLg,
+              fontWeight: AppConstants.fontWeightBold,
             ),
           ),
           const Spacer(),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: EdgeInsets.symmetric(
+              horizontal: AppConstants.spacingMd,
+              vertical: AppConstants.spacingXs,
+            ),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.surfaceMedium, AppColors.surfaceLight],
-              ),
-              borderRadius: BorderRadius.circular(12),
+              gradient: AppConstants.primaryGradient,
+              borderRadius: BorderRadius.circular(AppConstants.radiusLg),
               border: Border.all(
-                color: AppColors.primaryPink.withOpacity(0.3),
-                width: 1.5, // slightly thicker border
+                color: AppConstants.tealPrimary.withOpacity(0.3),
+                width: AppConstants.borderThin,
               ),
             ),
             child: Text(
               formatTime(_now),
-              style: const TextStyle(
-                color: AppColors.primaryPink,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+              style: TextStyle(
+                color: AppConstants.textPrimary,
+                fontSize: AppConstants.fontSizeSm,
+                fontWeight: AppConstants.fontWeightBold,
               ),
             ),
           ),

@@ -45,13 +45,23 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
 
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: AppColors.errorRed),
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: AppConstants.errorRed,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusSm)),
+      ),
     );
   }
 
   void _showSuccess(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: AppColors.successGreen),
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: AppConstants.successGreen,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusSm)),
+      ),
     );
   }
 
@@ -66,11 +76,11 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        backgroundColor: AppColors.surfaceLight,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: AppConstants.lightSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusXl)),
         child: Container(
           width: 420,
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(AppConstants.spacingLg),
           child: StatefulBuilder(
             builder: (ctx, setState) {
               return Column(
@@ -81,29 +91,29 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: EdgeInsets.all(AppConstants.spacingSm),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryPink.withOpacity(0.15),
+                          color: AppConstants.tealLight,
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           isEditing ? Icons.edit : Icons.add,
-                          color: AppColors.primaryPink,
+                          color: AppConstants.tealPrimary,
                           size: 24,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: AppConstants.spacingMd),
                       Text(
                         isEditing ? 'Edit Product' : 'Add Product',
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
+                        style: TextStyle(
+                          color: AppConstants.textPrimary,
+                          fontSize: AppConstants.fontSizeXl,
+                          fontWeight: AppConstants.fontWeightSemiBold,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: AppConstants.spacingLg),
 
                   // Image preview – centered square box
                   Center(
@@ -111,20 +121,23 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceMedium,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.primaryPink.withOpacity(0.3), width: 1.5),
+                        color: AppConstants.lightElevated,
+                        borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                        border: Border.all(
+                          color: AppConstants.tealPrimary.withOpacity(0.3),
+                          width: AppConstants.borderNormal,
+                        ),
                       ),
                       child: selectedImage != null
                           ? ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppConstants.radiusSm),
                         child: kIsWeb
                             ? Image.network(
                           selectedImage!.path,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Icon(
                             Icons.broken_image,
-                            color: AppColors.textSecondary,
+                            color: AppConstants.textSecondary,
                             size: 40,
                           ),
                         )
@@ -133,15 +146,15 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Icon(
                             Icons.broken_image,
-                            color: AppColors.textSecondary,
+                            color: AppConstants.textSecondary,
                             size: 40,
                           ),
                         ),
                       )
-                          : Icon(Icons.image, color: AppColors.textSecondary, size: 40),
+                          : Icon(Icons.image, color: AppConstants.textSecondary, size: 40),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: AppConstants.spacingSm),
 
                   // Select image button
                   Center(
@@ -153,60 +166,66 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                           setState(() => selectedImage = picked);
                         }
                       },
-                      icon: Icon(Icons.camera_alt, color: AppColors.primaryPink, size: 18),
+                      icon: Icon(Icons.camera_alt, color: AppConstants.tealPrimary, size: 18),
                       label: Text(
                         selectedImage == null ? 'Select Image' : 'Change Image',
-                        style: TextStyle(color: AppColors.primaryPink),
+                        style: TextStyle(color: AppConstants.tealPrimary),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppConstants.spacingMd),
 
                   // Code field
                   TextField(
                     controller: codeController,
                     decoration: InputDecoration(
                       labelText: 'Product Code',
-                      labelStyle: TextStyle(color: AppColors.primaryPink),
-                      prefixIcon: Icon(Icons.qr_code, color: AppColors.primaryPink, size: 20),
+                      labelStyle: TextStyle(color: AppConstants.tealPrimary),
+                      prefixIcon: Icon(Icons.qr_code, color: AppConstants.tealPrimary, size: 20),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppColors.primaryPink.withOpacity(0.4), width: 1.5),
+                        borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                        borderSide: BorderSide(
+                          color: AppConstants.tealPrimary.withOpacity(0.3),
+                          width: AppConstants.borderNormal,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.primaryPink, width: 2),
+                        borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                        borderSide: BorderSide(color: AppConstants.tealPrimary, width: 2),
                       ),
                       filled: true,
-                      fillColor: AppColors.surfaceLight,
+                      fillColor: AppConstants.lightElevated,
                       contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    style: const TextStyle(color: AppColors.textPrimary),
+                    style: TextStyle(color: AppConstants.textPrimary),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: AppConstants.spacingMd),
 
                   // Name field
                   TextField(
                     controller: nameController,
                     decoration: InputDecoration(
                       labelText: 'Product Name',
-                      labelStyle: TextStyle(color: AppColors.primaryPink),
-                      prefixIcon: Icon(Icons.label, color: AppColors.primaryPink, size: 20),
+                      labelStyle: TextStyle(color: AppConstants.tealPrimary),
+                      prefixIcon: Icon(Icons.label, color: AppConstants.tealPrimary, size: 20),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppColors.primaryPink.withOpacity(0.4), width: 1.5),
+                        borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                        borderSide: BorderSide(
+                          color: AppConstants.tealPrimary.withOpacity(0.3),
+                          width: AppConstants.borderNormal,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.primaryPink, width: 2),
+                        borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                        borderSide: BorderSide(color: AppConstants.tealPrimary, width: 2),
                       ),
                       filled: true,
-                      fillColor: AppColors.surfaceLight,
+                      fillColor: AppConstants.lightElevated,
                       contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    style: const TextStyle(color: AppColors.textPrimary),
+                    style: TextStyle(color: AppConstants.textPrimary),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: AppConstants.spacingMd),
 
                   // Category dropdown with label
                   Column(
@@ -215,27 +234,33 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                       Text(
                         'Category',
                         style: TextStyle(
-                          color: AppColors.primaryPink,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                          color: AppConstants.tealPrimary,
+                          fontSize: AppConstants.fontSizeSm,
+                          fontWeight: AppConstants.fontWeightMedium,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: AppConstants.spacingXs),
                       Container(
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceLight,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.primaryPink.withOpacity(0.4), width: 1.5),
+                          color: AppConstants.lightElevated,
+                          borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                          border: Border.all(
+                            color: AppConstants.tealPrimary.withOpacity(0.3),
+                            width: AppConstants.borderNormal,
+                          ),
                         ),
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
                             value: selectedCategory,
                             isExpanded: true,
-                            dropdownColor: AppColors.surfaceLight,
-                            style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
-                            icon: Icon(Icons.arrow_drop_down, color: AppColors.primaryPink),
+                            dropdownColor: AppConstants.lightSurface,
+                            style: TextStyle(
+                              color: AppConstants.textPrimary,
+                              fontSize: AppConstants.fontSizeMd,
+                            ),
+                            icon: Icon(Icons.arrow_drop_down, color: AppConstants.tealPrimary),
                             items: _categoryOptions.map((cat) {
                               return DropdownMenuItem(
                                 value: cat,
@@ -250,31 +275,34 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: AppConstants.spacingMd),
 
                   // Price field
                   TextField(
                     controller: priceController,
                     decoration: InputDecoration(
                       labelText: 'Price (₹)',
-                      labelStyle: TextStyle(color: AppColors.primaryPink),
-                      prefixIcon: Icon(Icons.currency_rupee, color: AppColors.primaryPink, size: 20),
+                      labelStyle: TextStyle(color: AppConstants.tealPrimary),
+                      prefixIcon: Icon(Icons.currency_rupee, color: AppConstants.tealPrimary, size: 20),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppColors.primaryPink.withOpacity(0.4), width: 1.5),
+                        borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                        borderSide: BorderSide(
+                          color: AppConstants.tealPrimary.withOpacity(0.3),
+                          width: AppConstants.borderNormal,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.primaryPink, width: 2),
+                        borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                        borderSide: BorderSide(color: AppConstants.tealPrimary, width: 2),
                       ),
                       filled: true,
-                      fillColor: AppColors.surfaceLight,
+                      fillColor: AppConstants.lightElevated,
                       contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(color: AppColors.textPrimary),
+                    style: TextStyle(color: AppConstants.textPrimary),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: AppConstants.spacingLg),
 
                   // Buttons
                   Row(
@@ -283,21 +311,28 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                         child: OutlinedButton(
                           onPressed: () => Navigator.pop(ctx),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textSecondary,
-                            side: BorderSide(color: AppColors.textSecondary.withOpacity(0.5), width: 1.5),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            foregroundColor: AppConstants.textSecondary,
+                            side: BorderSide(
+                              color: AppConstants.textSecondary.withOpacity(0.5),
+                              width: AppConstants.borderNormal,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           child: const Text('Cancel'),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: AppConstants.spacingMd),
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryPink,
+                            backgroundColor: AppConstants.tealPrimary,
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           onPressed: () async {
@@ -352,9 +387,16 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surfaceLight,
-        title: const Text('Delete Product', style: TextStyle(color: AppColors.textPrimary)),
-        content: const Text('Are you sure?', style: TextStyle(color: AppColors.textSecondary)),
+        backgroundColor: AppConstants.lightSurface,
+        title: Text(
+          'Delete Product',
+          style: TextStyle(color: AppConstants.textPrimary),
+        ),
+        content: Text(
+          'Are you sure?',
+          style: TextStyle(color: AppConstants.textSecondary),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusMd)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -362,7 +404,10 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppConstants.errorRed),
+            ),
           ),
         ],
       ),
@@ -382,12 +427,17 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
     final isLoading = context.watch<ProductProvider>().isLoading;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppConstants.lightBackground,
       body: Column(
         children: [
-          // Search row with dropdown filter – thicker borders
+          // Search row with dropdown filter
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+            padding: EdgeInsets.fromLTRB(
+              AppConstants.spacingSm,
+              AppConstants.spacingXs,
+              AppConstants.spacingSm,
+              AppConstants.spacingSm,
+            ),
             child: Row(
               children: [
                 // Search bar
@@ -396,46 +446,68 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                   child: Container(
                     height: 44,
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceLight,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.primaryPink.withOpacity(0.4), width: 1.5),
+                      color: AppConstants.lightSurface,
+                      borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                      border: Border.all(
+                        color: AppConstants.tealPrimary.withOpacity(0.3),
+                        width: AppConstants.borderNormal,
+                      ),
                     ),
                     child: TextField(
                       controller: _searchController,
                       onChanged: (v) => setState(() => _searchQuery = v),
-                      style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                      style: TextStyle(
+                        color: AppConstants.textPrimary,
+                        fontSize: AppConstants.fontSizeSm,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'Search by name/code',
-                        hintStyle: TextStyle(color: AppColors.textHint),
-                        prefixIcon: Icon(Icons.search, color: AppColors.primaryPink, size: 20),
+                        hintStyle: TextStyle(color: AppConstants.textHint),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: AppConstants.tealPrimary,
+                          size: 20,
+                        ),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: AppConstants.spacingSm),
                 // Category dropdown filter
                 Container(
                   width: 120,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceLight,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.primaryPink.withOpacity(0.4), width: 1.5),
+                    color: AppConstants.lightSurface,
+                    borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                    border: Border.all(
+                      color: AppConstants.tealPrimary.withOpacity(0.3),
+                      width: AppConstants.borderNormal,
+                    ),
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: _selectedCategory,
                       isExpanded: true,
-                      dropdownColor: AppColors.surfaceLight,
-                      style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
-                      icon: Icon(Icons.arrow_drop_down, color: AppColors.primaryPink),
+                      dropdownColor: AppConstants.lightSurface,
+                      style: TextStyle(
+                        color: AppConstants.textPrimary,
+                        fontSize: AppConstants.fontSizeSm,
+                      ),
+                      icon: Icon(
+                        Icons.arrow_drop_down,
+                        color: AppConstants.tealPrimary,
+                      ),
                       items: _categories.map((cat) {
                         return DropdownMenuItem(
                           value: cat,
-                          child: Text(cat, overflow: TextOverflow.ellipsis),
+                          child: Text(
+                            cat,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -444,16 +516,16 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: AppConstants.spacingSm),
                 // Add button
                 ElevatedButton(
                   onPressed: () => _openProductDialog(),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryPink,
+                    backgroundColor: AppConstants.tealPrimary,
                     foregroundColor: Colors.white,
                     minimumSize: const Size(50, 44),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppConstants.radiusMd),
                     ),
                   ),
                   child: const Icon(Icons.add, size: 24),
@@ -462,7 +534,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
             ),
           ),
 
-          const SizedBox(height: 4),
+          SizedBox(height: AppConstants.spacingXs),
 
           // Product list
           Expanded(
@@ -475,7 +547,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                   return Center(
                     child: Text(
                       'No products found',
-                      style: TextStyle(color: AppColors.textSecondary),
+                      style: TextStyle(color: AppConstants.textSecondary),
                     ),
                   );
                 }
@@ -484,12 +556,15 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                   itemBuilder: (ctx, index) {
                     final product = filtered[index];
                     return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      margin: EdgeInsets.symmetric(
+                        horizontal: AppConstants.spacingSm,
+                        vertical: AppConstants.spacingXs,
+                      ),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceLight,
-                        borderRadius: BorderRadius.circular(16),
+                        color: AppConstants.lightSurface,
+                        borderRadius: BorderRadius.circular(AppConstants.radiusLg),
                         border: Border.all(
-                          color: AppColors.primaryPink.withOpacity(0.2),
+                          color: AppConstants.tealPrimary.withOpacity(0.2),
                           width: 1.0,
                         ),
                         boxShadow: [
@@ -501,21 +576,24 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                         ],
                       ),
                       child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: AppConstants.spacingMd,
+                          vertical: AppConstants.spacingSm,
+                        ),
                         leading: Container(
                           width: 52,
                           height: 52,
                           decoration: BoxDecoration(
-                            color: AppColors.primaryPink.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            color: AppConstants.tealLight.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(AppConstants.radiusMd),
                             border: Border.all(
-                              color: AppColors.primaryPink.withOpacity(0.3),
-                              width: 1.5,
+                              color: AppConstants.tealPrimary.withOpacity(0.3),
+                              width: AppConstants.borderThin,
                             ),
                           ),
                           child: product.imageUrl.isNotEmpty
                               ? ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(AppConstants.radiusSm),
                             child: Image.network(
                               product.imageUrl,
                               width: 48,
@@ -523,61 +601,64 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => Icon(
                                 Icons.fastfood,
-                                color: AppColors.primaryPink,
+                                color: AppConstants.tealPrimary,
                                 size: 30,
                               ),
                             ),
                           )
                               : Icon(
                             Icons.fastfood,
-                            color: AppColors.primaryPink,
+                            color: AppConstants.tealPrimary,
                             size: 30,
                           ),
                         ),
                         title: Text(
                           product.name,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                          style: TextStyle(
+                            color: AppConstants.textPrimary,
+                            fontWeight: AppConstants.fontWeightBold,
+                            fontSize: AppConstants.fontSizeMd,
                           ),
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const SizedBox(height: 4),
+                            SizedBox(height: AppConstants.spacingXs),
                             Text(
                               'Code: ${product.code}',
                               style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 12,
+                                color: AppConstants.textSecondary,
+                                fontSize: AppConstants.fontSizeXs,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            SizedBox(height: AppConstants.spacingXs),
                             Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: AppConstants.spacingSm,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primaryPink.withOpacity(0.15),
-                                    borderRadius: BorderRadius.circular(12),
+                                    color: AppConstants.tealLight,
+                                    borderRadius: BorderRadius.circular(AppConstants.radiusSm),
                                   ),
                                   child: Text(
                                     product.category,
-                                    style: const TextStyle(
-                                      color: AppColors.primaryPink,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
+                                    style: TextStyle(
+                                      color: AppConstants.tealPrimary,
+                                      fontSize: AppConstants.fontSizeXs,
+                                      fontWeight: AppConstants.fontWeightSemiBold,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                SizedBox(width: AppConstants.spacingSm),
                                 Text(
                                   '₹${product.price.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    color: AppColors.primaryPink,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
+                                  style: TextStyle(
+                                    color: AppConstants.tealPrimary,
+                                    fontWeight: AppConstants.fontWeightBold,
+                                    fontSize: AppConstants.fontSizeMd,
                                   ),
                                 ),
                               ],
@@ -588,14 +669,22 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: Icon(Icons.edit, color: AppColors.primaryPink, size: 30), // increased size
+                              icon: Icon(
+                                Icons.edit,
+                                color: AppConstants.tealPrimary,
+                                size: 24,
+                              ),
                               onPressed: () => _openProductDialog(product: product),
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                             ),
-                            const SizedBox(width: 1), // gap between icons
+                            SizedBox(width: 6),
                             IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red, size: 30), // increased size
+                              icon: const Icon(
+                                Icons.delete,
+                                color: Colors.red,
+                                size: 24,
+                              ),
                               onPressed: () => _deleteProduct(product.id),
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),

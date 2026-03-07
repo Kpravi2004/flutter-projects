@@ -679,6 +679,22 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
       List<TableModel> fetchedTables = await ApiService.fetchTables();
       if (!mounted) return;
 
+      // For each table, fetch its seats and update the table status
+      for (var table in fetchedTables) {
+        try {
+          List<SeatModel> seats = await ApiService.getSeatsByTable(table.id);
+          table.seats = seats; // assign fetched seats
+          // Recalculate table status based on occupied seats
+          int occupiedCount = seats.where((s) => s.status == 'Occupied').length;
+          table.guests = occupiedCount;
+          table.status = occupiedCount > 0 ? TableStatus.occupied : TableStatus.free;
+        } catch (e) {
+          print('Error fetching seats for table ${table.id}: $e');
+          // If seats can't be fetched, keep existing data but status might be wrong.
+          // At least preserve waiter info.
+        }
+      }
+
       print('✅ Fetched ${fetchedTables.length} tables');
       if (fetchedTables.isNotEmpty) {
         print('   First table ID: ${fetchedTables[0].id}, number: ${fetchedTables[0].number}');
@@ -708,6 +724,8 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
       _showError('Failed to load tables: $e');
     }
   }
+
+
 
   void _showAddTableDialog() {
     showDialog(
@@ -849,16 +867,31 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
       return;
     }
 
+    // Filter only free seats (status == 'Free')
+    final freeSeats = seats.where((s) => s.status == 'Free').toList();
+    if (freeSeats.isEmpty) {
+      _showError('No free seats available');
+      return;
+    }
+
     bool? confirmed = await showDialog(
       context: context,
       builder: (context) => SeatSelectionDialog(
-        seats: seats!, // now non-nullable
-        maxGuests: table.maxGuests,
+        seats: freeSeats, // pass only free seats
+        maxGuests: freeSeats.length,
         tableNumber: int.parse(table.number),
         onSeatsSelected: (selectedSeats) async {
+          // selectedSeats contains seats that are now marked Occupied
           int occupiedCount = selectedSeats.where((s) => s.status == 'Occupied').length;
           setState(() {
-            table.seats = selectedSeats;
+            // Update the table's seats list (combine with unchanged seats)
+            // We need to merge the selected seats with the rest of the seats
+            List<SeatModel> allSeats = seats!;
+            for (var updated in selectedSeats) {
+              final index = allSeats.indexWhere((s) => s.id == updated.id);
+              if (index != -1) allSeats[index] = updated;
+            }
+            table.seats = allSeats;
             table.guests = occupiedCount;
             table.status = occupiedCount > 0 ? TableStatus.occupied : TableStatus.free;
           });
@@ -868,6 +901,7 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
             _showSuccess('Table updated');
           } catch (e) {
             _showError('Failed to update table');
+            _fetchTables();
           }
         },
       ),
@@ -932,58 +966,44 @@ class _MobileTableScreenState extends State<MobileTableScreen> {
     );
   }
 
-  void _showAddGuestsDialog(TableModel table) {
-    int current = table.guests;
-    int max = table.maxGuests;
-    showDialog(
+  void _showAddGuestsDialog(TableModel table) async {
+    List<SeatModel>? seats;
+    try {
+      seats = await ApiService.getSeatsByTable(table.id);
+    } catch (e) {
+      _showError('Failed to fetch seats');
+      return;
+    }
+
+    if (seats == null || seats.isEmpty) {
+      _showError('No seats found for this table');
+      return;
+    }
+
+    seats.sort((a, b) => a.seatNo.compareTo(b.seatNo));
+
+    bool? updated = await showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            backgroundColor: AppConstants.lightSurface,
-            title: Text('Add Guests', style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeLg)),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Current: $current  |  Max: $max', style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeSm)),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(icon: Icon(Icons.remove_circle, color: AppConstants.errorRed, size: 36), onPressed: current > 0 ? () => setState(() => current--) : null),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      decoration: BoxDecoration(border: Border.all(color: AppConstants.tealPrimary), borderRadius: BorderRadius.circular(8)),
-                      child: Text('$current', style: TextStyle(color: AppConstants.textPrimary, fontSize: AppConstants.fontSizeXl, fontWeight: FontWeight.bold)),
-                    ),
-                    IconButton(icon: Icon(Icons.add_circle, color: AppConstants.successGreen, size: 36), onPressed: current < max ? () => setState(() => current++) : null),
-                  ],
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: TextStyle(color: AppConstants.textSecondary))),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: AppConstants.tealPrimary, foregroundColor: Colors.white),
-                onPressed: () async {
-                  this.setState(() {
-                    table.guests = current;
-                    table.updateSeatsFromGuestCount();
-                  });
-                  Navigator.pop(context);
-                  try {
-                    await ApiService.updateTable(table);
-                    if (table.maxGuests >= 6 && current >= 4) _showBillSplitOption(table);
-                  } catch (e) {
-                    _showError('Failed to update');
-                    _fetchTables();
-                  }
-                },
-                child: const Text('Update'),
-              ),
-            ],
-          );
+      builder: (context) => SeatSelectionDialog(
+        seats: seats!, // null assertion safe because we checked above
+        maxGuests: table.maxGuests,
+        tableNumber: int.parse(table.number),
+        allowToggleOccupied: false, // occupied seats are disabled
+        onSeatsSelected: (updatedSeats) async {
+          int occupiedCount = updatedSeats.where((s) => s.status == 'Occupied').length;
+          setState(() {
+            table.seats = updatedSeats;
+            table.guests = occupiedCount;
+            table.status = occupiedCount > 0 ? TableStatus.occupied : TableStatus.free;
+          });
+
+          try {
+            await ApiService.updateTable(table);
+            _showSuccess('Table updated');
+          } catch (e) {
+            _showError('Failed to update table');
+            _fetchTables();
+          }
         },
       ),
     );

@@ -6,6 +6,7 @@ class SeatSelectionDialog extends StatefulWidget {
   final List<SeatModel> seats;
   final int maxGuests;
   final int tableNumber;
+  final bool allowToggleOccupied; // if true, occupied seats can be toggled (used in table creation)
   final Function(List<SeatModel>) onSeatsSelected;
 
   const SeatSelectionDialog({
@@ -13,6 +14,7 @@ class SeatSelectionDialog extends StatefulWidget {
     required this.seats,
     required this.maxGuests,
     required this.tableNumber,
+    this.allowToggleOccupied = false,
     required this.onSeatsSelected,
   }) : super(key: key);
 
@@ -21,36 +23,15 @@ class SeatSelectionDialog extends StatefulWidget {
 }
 
 class _SeatSelectionDialogState extends State<SeatSelectionDialog> {
-  late List<SeatModel> _selectedSeats;
-  int _occupiedCount = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    // Start with all seats free
-    _selectedSeats = widget.seats.map((s) => SeatModel(
-      id: s.id,
-      seatNo: s.seatNo,
-      status: 'Free',
-      colorCode: 'White',
-      tableId: s.tableId,
-    )).toList();
-  }
-
-  void _toggleSeat(int index) {
-    setState(() {
-      if (_selectedSeats[index].status == 'Free') {
-        _selectedSeats[index].status = 'Occupied';
-        _occupiedCount++;
-      } else {
-        _selectedSeats[index].status = 'Free';
-        _occupiedCount--;
-      }
-    });
-  }
+  // Track which free seats are temporarily selected to become occupied
+  final Set<int> _selectedSeatIds = {};
 
   @override
   Widget build(BuildContext context) {
+    // Count how many seats would become occupied after confirmation
+    int willBeOccupied = widget.seats.where((s) => s.status == 'Occupied').length +
+        _selectedSeatIds.length;
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       backgroundColor: AppConstants.lightSurface,
@@ -61,7 +42,7 @@ class _SeatSelectionDialogState extends State<SeatSelectionDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Select Occupied Seats',
+              widget.allowToggleOccupied ? 'Select Seats' : 'Add Guests',
               style: TextStyle(
                 color: AppConstants.textPrimary,
                 fontSize: AppConstants.fontSizeXl,
@@ -70,38 +51,65 @@ class _SeatSelectionDialogState extends State<SeatSelectionDialog> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Table ${widget.tableNumber} • Tap seats to mark occupied',
+              'Table ${widget.tableNumber} • Tap free seats to select',
               style: TextStyle(color: AppConstants.textSecondary, fontSize: AppConstants.fontSizeSm),
             ),
             const SizedBox(height: 16),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: List.generate(_selectedSeats.length, (index) {
-                bool isOccupied = _selectedSeats[index].status == 'Occupied';
+              children: List.generate(widget.seats.length, (index) {
+                final seat = widget.seats[index];
+                final bool isOccupied = seat.status == 'Occupied';
+                final bool isFree = seat.status == 'Free';
+                final bool isSelected = _selectedSeatIds.contains(seat.id);
+
+                // Determine background color
+                Color bgColor;
+                if (isOccupied) {
+                  bgColor = AppConstants.errorRed; // occupied seats are red
+                } else if (isSelected) {
+                  bgColor = AppConstants.successGreen; // temporarily selected free seats are green
+                } else {
+                  bgColor = Colors.grey.shade200; // free and not selected
+                }
+
+                // Determine if seat is tappable
+                bool canTap = isFree; // only free seats can be toggled
+                if (widget.allowToggleOccupied && isOccupied) canTap = true;
+
                 return GestureDetector(
-                  onTap: () => _toggleSeat(index),
+                  onTap: canTap
+                      ? () {
+                    setState(() {
+                      if (isSelected) {
+                        _selectedSeatIds.remove(seat.id);
+                      } else {
+                        _selectedSeatIds.add(seat.id);
+                      }
+                    });
+                  }
+                      : null,
                   child: Container(
-                    width: 50,
-                    height: 50,
+                    width: 45,
+                    height: 45,
                     decoration: BoxDecoration(
-                      color: isOccupied ? AppConstants.successGreen : Colors.grey.shade200,
+                      color: bgColor,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isOccupied ? Colors.white : Colors.grey.shade400,
+                        color: isSelected
+                            ? Colors.white
+                            : (isOccupied ? Colors.white : Colors.grey.shade400),
                         width: 2,
                       ),
-                      boxShadow: isOccupied
-                          ? [BoxShadow(color: AppConstants.successGreen.withOpacity(0.3), blurRadius: 8)]
-                          : null,
                     ),
                     child: Center(
                       child: Text(
-                        '${_selectedSeats[index].seatNo}',
+                        '${seat.seatNo}',
                         style: TextStyle(
-                          color: isOccupied ? Colors.white : AppConstants.textPrimary,
+                          color: (isOccupied || isSelected) ? Colors.white : AppConstants.textPrimary,
                           fontSize: AppConstants.fontSizeMd,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: isOccupied || isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -123,7 +131,7 @@ class _SeatSelectionDialogState extends State<SeatSelectionDialog> {
                   const Icon(Icons.people, color: AppConstants.tealPrimary, size: 20),
                   const SizedBox(width: 8),
                   Text(
-                    '$_occupiedCount / ${widget.maxGuests} occupied',
+                    '$willBeOccupied / ${widget.maxGuests} occupied',
                     style: TextStyle(
                       color: AppConstants.textPrimary,
                       fontSize: AppConstants.fontSizeMd,
@@ -151,10 +159,33 @@ class _SeatSelectionDialogState extends State<SeatSelectionDialog> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: () {
-                      widget.onSeatsSelected(_selectedSeats);
+                      // Apply selections: create a new list of seats with updated statuses
+                      List<SeatModel> updatedSeats = widget.seats.map((seat) {
+                        if (_selectedSeatIds.contains(seat.id)) {
+                          return SeatModel(
+                            id: seat.id,
+                            seatNo: seat.seatNo,
+                            status: 'Occupied', // selected free seats become occupied
+                            colorCode: seat.colorCode,
+                            tableId: seat.tableId,
+                            billingStatus: seat.billingStatus,
+                          );
+                        } else {
+                          return SeatModel(
+                            id: seat.id,
+                            seatNo: seat.seatNo,
+                            status: seat.status,
+                            colorCode: seat.colorCode,
+                            tableId: seat.tableId,
+                            billingStatus: seat.billingStatus,
+                          );
+                        }
+                      }).toList();
+
+                      widget.onSeatsSelected(updatedSeats);
                       Navigator.pop(context);
                     },
-                    child: const Text('Confirm'),
+                    child: const Text('OK'),
                   ),
                 ),
               ],

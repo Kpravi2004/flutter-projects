@@ -5,7 +5,7 @@ import 'bills_screen.dart';
 import 'product_management_page.dart';
 import '../providers/product_provider.dart';
 import '../utils/constants.dart';
-
+import 'orders_screen.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
@@ -19,7 +19,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _pages = const [
     ResponsiveTableScreen(),  // first tab: table management
     BillsScreen(),            // second tab: bills placeholder
-    ProductManagementPage(),  // third tab: product management
+    ProductManagementPage(),
+    OrdersScreen(),
+    // third tab: product management
   ];
 
   @override
@@ -50,6 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.fastfood),
             label: 'Products',
           ),
+          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Orders'),
         ],
         selectedItemColor: AppConstants.tealPrimary,
         unselectedItemColor: AppConstants.textSecondary,

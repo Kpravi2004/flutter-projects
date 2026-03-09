@@ -472,4 +472,11 @@ class ApiService {
       throw Exception('Failed to update bill');
     }
   }
+  static Future<List<dynamic>> fetchBillsByDate(String date) async {
+    final response = await http.get(Uri.parse('$baseUrl/bills/by-date?date=$date'));
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+    throw Exception('Failed to load bills');
+  }
 }

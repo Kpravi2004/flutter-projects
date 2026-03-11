@@ -9,7 +9,6 @@ import '../models/waiter_model.dart';
 import '../models/product.dart';
 import '../models/order.dart';
 import '../models/order_item.dart';
-import '../utils/constants.dart';
 
 class ApiService {
   static const String baseUrl = 'http://localhost:8080'; // e.g., 'http://localhost:8080'

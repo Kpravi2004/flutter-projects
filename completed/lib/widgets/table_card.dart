@@ -60,9 +60,12 @@ class TableCard extends StatelessWidget {
     int topSeats = (table.maxGuests + 1) ~/ 2;
     int bottomSeats = table.maxGuests ~/ 2;
 
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
       onLongPress: onLongPress,
+      hoverColor: Colors.transparent,      // ← removes hover effect
+      splashColor: Colors.transparent,     // optional: remove tap splash
+      highlightColor: Colors.transparent,  // optional: remove highlight
       child: Container(
         width: tableWidth + 30,
         height: tableHeight + 60,

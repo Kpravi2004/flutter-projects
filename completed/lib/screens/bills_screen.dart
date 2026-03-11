@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../utils/constants.dart';
-import '../utils/helpers.dart';
 import '../widgets/bill_view_dialog.dart';
-import '../widgets/product_selection_dialog.dart';
-import '../models/product.dart';
 import 'bill_order_page.dart';
 import 'bill_edit_page.dart';
 

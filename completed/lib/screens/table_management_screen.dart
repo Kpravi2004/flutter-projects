@@ -7,8 +7,6 @@ import '../widgets/add_table_dialog.dart';
 import '../widgets/add_waiter_dialog.dart';
 import '../widgets/waiter_selection_dialog.dart';
 import '../widgets/bill_split_dialog.dart';
-import '../utils/constants.dart';
-import '../utils/helpers.dart';
 import 'bill_seat_selection_screen.dart';
 import '../services/api_service.dart';
 import 'order_page.dart'; // ADDED for navigation

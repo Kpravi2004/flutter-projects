@@ -7,8 +7,6 @@ import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../providers/product_provider.dart';
 import '../utils/constants.dart'; // <-- changed to constants
-import '../widgets/image_picker_button.dart';
-
 class ProductManagementPage extends StatefulWidget {
   const ProductManagementPage({super.key});
 

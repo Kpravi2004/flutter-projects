@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/table_model.dart';
 import '../models/order_model.dart';
-import '../utils/constants.dart';
 
 class BillSplitDialog extends StatefulWidget {
   final TableModel table;

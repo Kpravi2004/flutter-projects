@@ -1,0 +1,27 @@
+name: sentinix_table_management
+description: Integrated table management and ordering system
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.19.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.0.5
+  http: ^1.1.0
+  intl: ^0.18.1
+  image_picker: ^1.0.4
+  cross_file: ^0.3.3+4
+  http_parser: ^4.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+  # assets:   # <-- remove or comment out if you don't have an assets folder
+  #   - assets/

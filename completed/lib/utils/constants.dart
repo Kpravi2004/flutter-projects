@@ -26,9 +26,9 @@ class AppConstants {
   static const Color cleaningBlue = Color(0xFF01579B);
   static const Color billedPurple = Color(0xFF6A1B9A);
 
-  static const double borderThin = 4.0;
-  static const double borderNormal = 4.5;
-  static const double borderThick = 5;
+  static const double borderThin = 4;
+  static const double borderNormal = 3;
+  static const double borderThick = 3;
 
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [tealLight, tealPrimary],
